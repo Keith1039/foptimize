@@ -1,0 +1,14 @@
+{
+  "users": [
+    {
+      "email": "keithcompere150@gmail.com",
+      "relevant_airports": ["YOW", "YYZ"],
+      "subscribed_countries": ["Japan", "Thailand"],
+      "config": {
+        "travel_duration": "3"
+      },
+      "threshold": 60
+
+    }
+  ]
+}
