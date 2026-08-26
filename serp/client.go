@@ -1,16 +1,16 @@
 package serp
 
 import (
+	"github.com/Keith1039/foptimize/config"
 	"github.com/serpapi/serpapi-golang"
-	"os"
 )
 
 var client serpapi.SerpApiClient
 
 func init() {
 	// replace with your SerpApi key
-	setting := serpapi.NewSerpApiClientSetting(os.Getenv("SERPAPI_KEY"))
-	setting.Engine = "google_flights"
+	setting := serpapi.NewSerpApiClientSetting(config.Config.SERPAPI_KEY)
+	setting.Engine = "google_flights_deals"
 	// initialize the client
 	client = serpapi.NewClient(setting)
 }
