@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Keith1039/foptimize/schema"
-	"github.com/Keith1039/foptimize/serp"
 	"io"
 	"log"
 	"os"
@@ -54,42 +53,34 @@ func MarshalConfig(user schema.User) map[string]any {
 }
 
 func main() {
-	client := serp.GetClient()
-	users := GetUsers()
-	fmt.Println("Users:")
-	fmt.Printf("%+v", users)
-	var allDeals []any
-
-	for _, user := range users.Users {
-		fmt.Printf("email: %s\n", user.Email)
-		config := MarshalConfig(user)
-		for _, airport := range user.RelevantAirports {
-			params := map[string]string{
-				"departure_id": airport,
-				"currency":     "CAD",
-				"gl":           "ca",
-				"hl":           "en",
-			}
-			for key, value := range config {
-				if value.(string) != "" {
-					params[key] = value.(string)
-				}
-			}
-			fmt.Println(params)
-			result, err := client.Search(params)
-			if err != nil {
-				log.Fatal(err)
-			}
-			deals, ok := result["deals"].([]any)
-			if !ok {
-				log.Fatal("type conversion failed")
-			}
-			allDeals = append(allDeals, deals...)
-		}
-	}
-	jsonData, err := json.MarshalIndent(map[string][]any{"alldeals": allDeals}, "", " ")
+	// Open our jsonFile
+	jsonFile, err := os.Open("example.json")
+	// if we os.Open returns an error then handle it
 	if err != nil {
-		log.Fatal("Error marshalling JSON:", err)
+		log.Fatal()
 	}
-	err = os.WriteFile("alldeals.json", jsonData, os.ModePerm)
+
+	fmt.Println("Successfully Opened users.json")
+	// defer the closing of our jsonFile so that we can parse it later on
+	defer jsonFile.Close()
+
+	// read our opened jsonFile as a byte array.
+	byteValue, err := io.ReadAll(jsonFile)
+	if err != nil {
+		log.Fatal("Error reading file:", err)
+	}
+
+	var deals schema.Deals
+
+	err = json.Unmarshal(byteValue, &deals)
+	if err != nil {
+		log.Fatal("Error unmarshalling JSON:", err)
+	}
+	for _, deal := range deals.Deals {
+		indent, err := json.MarshalIndent(deal, "", "  ")
+		if err != nil {
+			return
+		}
+		fmt.Println(string(indent))
+	}
 }
