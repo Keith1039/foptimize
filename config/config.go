@@ -5,20 +5,16 @@ import (
 	"log"
 )
 
-type ProjectConfig struct {
+var (
 	ENV         string
 	SERPAPI_KEY string
-}
-
-var Config *ProjectConfig
+)
 
 func init() {
 	env, err := godotenv.Read()
 	if err != nil {
 		log.Fatal(err)
 	}
-	Config = &ProjectConfig{
-		ENV:         env["config"],
-		SERPAPI_KEY: env["SERPAPI_KEY"],
-	}
+	ENV = env["ENV"]
+	SERPAPI_KEY = env["SERPAPI_KEY"]
 }

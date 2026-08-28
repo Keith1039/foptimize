@@ -9,7 +9,7 @@ var client serpapi.SerpApiClient
 
 func init() {
 	// replace with your SerpApi key
-	setting := serpapi.NewSerpApiClientSetting(config.Config.SERPAPI_KEY)
+	setting := serpapi.NewSerpApiClientSetting(config.SERPAPI_KEY)
 	setting.Engine = "google_flights_deals"
 	// initialize the client
 	client = serpapi.NewClient(setting)
