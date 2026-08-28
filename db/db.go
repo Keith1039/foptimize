@@ -20,11 +20,15 @@ func NewDatabaseClient(connString string) (DatabaseClient, error) {
 	return DatabaseClient{db: pool}, nil
 }
 
-func (client DatabaseClient) AddUser(user schema.User) {
+func (client DatabaseClient) AddUser(ctx context.Context, user schema.User) error {
 	args := pgx.NamedArgs{
-		"email":  user.Email,
-		"config": user.Config,
+		"email":                user.Email,
+		"relevant_airports":    user.RelevantAirports,
+		"subscribed_countries": user.SubscribedCountries,
+		"config":               user.Config,
 	}
+	_, err := client.db.Exec(ctx, addUserQuery, args)
+	return err
 }
 
 func (client DatabaseClient) GetUserByID(ctx context.Context, id int) schema.User {
