@@ -5,7 +5,6 @@ import (
 	"github.com/Keith1039/foptimize/schema"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"log"
 )
 
 type DatabaseClient struct {
@@ -31,28 +30,28 @@ func (client DatabaseClient) AddUser(ctx context.Context, user schema.User) erro
 	return err
 }
 
-func (client DatabaseClient) GetUserByID(ctx context.Context, id int) schema.User {
+func (client DatabaseClient) GetUserByID(ctx context.Context, id int) (schema.User, error) {
 	rows, err := client.db.Query(ctx, findUserQueryId, id)
 	if err != nil {
-		log.Fatal(err)
+		return schema.User{}, err
 	}
 	// closes row and puts into struct
 	user, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[schema.User])
 	if err != nil {
-		log.Fatalf("User with id '%d' does not exist %v", id, err)
+		return schema.User{}, err
 	}
-	return user
+	return user, nil
 }
 
-func (client DatabaseClient) GetUserByEmail(ctx context.Context, email string) schema.User {
+func (client DatabaseClient) GetUserByEmail(ctx context.Context, email string) (schema.User, error) {
 	rows, err := client.db.Query(ctx, findUserQueryEmail, email)
 	if err != nil {
-		log.Fatal(err)
+		return schema.User{}, err
 	}
 	// closes row and puts into struct
 	user, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[schema.User])
 	if err != nil {
-		log.Fatalf("User with email '%s' does not exist %v", email, err)
+		return schema.User{}, err
 	}
-	return user
+	return user, nil
 }

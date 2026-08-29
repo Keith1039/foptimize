@@ -18,3 +18,15 @@ services:
     ports:
       # Entirely up to you what port you want to use while testing.
       - "2000:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 1s
+      timeout: 5s
+      retries: 30
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      pgtestdb:
+        condition: service_healthy
