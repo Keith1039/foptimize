@@ -12,7 +12,7 @@ var (
 )
 
 func init() {
-	env, err := godotenv.Read()
+	env, err := godotenv.Read("../.env")
 	if err != nil {
 		log.Fatal(err)
 	}

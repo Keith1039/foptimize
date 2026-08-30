@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"github.com/Keith1039/foptimize/schema"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -21,11 +22,13 @@ func NewDatabaseClient(connString string) (DatabaseClient, error) {
 
 func (client DatabaseClient) AddUser(ctx context.Context, user schema.User) error {
 	args := pgx.NamedArgs{
-		"email":                user.Email,
-		"relevant_airports":    user.RelevantAirports,
-		"subscribed_countries": user.SubscribedCountries,
-		"config":               user.Config,
+		"EMAIL":                user.Email,
+		"RELEVANT_AIRPORTS":    user.RelevantAirports,
+		"SUBSCRIBED_COUNTRIES": user.SubscribedCountries,
+		"CONFIG":               user.Config,
+		"THRESHOLD":            user.Threshold,
 	}
+	fmt.Printf("%v+", args)
 	_, err := client.db.Exec(ctx, addUserQuery, args)
 	return err
 }

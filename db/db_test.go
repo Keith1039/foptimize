@@ -5,15 +5,23 @@ import (
 	"github.com/Keith1039/foptimize/config"
 	"github.com/Keith1039/foptimize/db"
 	"github.com/Keith1039/foptimize/schema"
+	"github.com/brianvoe/gofakeit/v7"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"log"
+	"reflect"
 	"testing"
 )
 
 var dbClient db.DatabaseClient
 
-var testUser = schema.User{}
+var testUser = schema.User{
+	Email:               gofakeit.Email(),
+	RelevantAirports:    []string{"YYW"},
+	SubscribedCountries: []string{"China"},
+	Config:              schema.Config{TravelDuration: "2"},
+	Threshold:           50,
+}
 
 var pool *pgxpool.Pool
 
@@ -35,7 +43,7 @@ func TestDatabaseClient_AddUser(t *testing.T) {
 		t.Fatal(err)
 	}
 	// grab latest user
-	query := `SELECT ID, EMAIL, CONFIG, CREATED_AT FROM USERS ORDER BY ID DESC LIMIT 1`
+	query := `SELECT EMAIL, RELEVANT_AIRPORTS, SUBSCRIBED_COUNTRIES, CONFIG, THRESHOLD FROM USERS ORDER BY ID DESC LIMIT 1`
 	rows, err := pool.Query(context.Background(), query)
 	if err != nil {
 		t.Fatal(err)
@@ -44,7 +52,7 @@ func TestDatabaseClient_AddUser(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if user.Email != testUser.Email {
-		t.Fatalf("retrieved user: %+v\n does not match added user: %+v", user, testUser)
+	if !reflect.DeepEqual(user, testUser) {
+		t.Fatalf("user: %+v is not equal to test user: %+v", user, testUser)
 	}
 }
