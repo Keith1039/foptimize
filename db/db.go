@@ -106,9 +106,9 @@ func (client DatabaseClient) AddDeal(ctx context.Context, deal schema.Deal) erro
 	return nil
 }
 
-func (client DatabaseClient) MapUserAndDeal(ctx context.Context, user schema.User, deal schema.Deal) error {
+func (client DatabaseClient) MapUserAndDeal(ctx context.Context, deal schema.Deal, id int) error {
 	args := pgx.NamedArgs{
-		"USER_ID":     user.Id,
+		"USER_ID":     id,
 		"FLIGHT_LINK": deal.FlightLink,
 	}
 	_, err := client.db.Exec(ctx, mapUserAndDeal, args)

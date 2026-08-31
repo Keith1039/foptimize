@@ -241,7 +241,7 @@ func TestDatabaseClient_MapUserAndDeal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = dbClient.MapUserAndDeal(ctx, testUser, testDeal)
+	err = dbClient.MapUserAndDeal(ctx, testDeal, testUser.Id)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -278,7 +278,7 @@ func TestDatabaseClient_GetUserDeals(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = dbClient.MapUserAndDeal(ctx, testUser, testDeal)
+		err = dbClient.MapUserAndDeal(ctx, testDeal, testUser.Id)
 		if err != nil {
 			return
 		}
