@@ -261,3 +261,33 @@ func TestDatabaseClient_MapUserAndDeal(t *testing.T) {
 		t.Fatalf("expected id: %d and link: %s does not match received \nid:%d and link: %s", testUser.Id, testDeal.FlightLink, userId, flightLink)
 	}
 }
+
+func TestDatabaseClient_GetUserDeals(t *testing.T) {
+	// generate user
+	testUser := genUser()
+	ctx := context.Background()
+	id, err := dbClient.AddUser(ctx, testUser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testUser.Id = id
+	dealAmount := 2
+	for i := 0; i < dealAmount; i++ {
+		testDeal := genDeal()
+		err = dbClient.AddDeal(ctx, testDeal)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = dbClient.MapUserAndDeal(ctx, testUser, testDeal)
+		if err != nil {
+			return
+		}
+	}
+	deals, err := dbClient.GetUserDeals(ctx, testUser.Id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(deals) != dealAmount {
+		t.Fatalf("expect %d deal. received %d deals", dealAmount, len(deals))
+	}
+}

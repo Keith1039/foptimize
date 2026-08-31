@@ -82,6 +82,7 @@ const getDealsQuery = `SELECT
 							START_DATE,
 							END_DATE,
 							DEPARTURE_AIRPORT_CODE,
+							ARRIVAL_AIRPORT_CODE,
 							FLIGHT_DURATION,
 							STOPS,
 							AIRLINE,
