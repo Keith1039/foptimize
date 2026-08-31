@@ -225,3 +225,39 @@ func TestDatabaseClient_AddDeal(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestDatabaseClient_MapUserAndDeal(t *testing.T) {
+	// generate user
+	testUser := genUser()
+	ctx := context.Background()
+	id, err := dbClient.AddUser(ctx, testUser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testUser.Id = id
+	// generate deals
+	testDeal := genDeal()
+	err = dbClient.AddDeal(ctx, testDeal)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = dbClient.MapUserAndDeal(ctx, testUser, testDeal)
+	if err != nil {
+		t.Fatal(err)
+	}
+	query := `SELECT USER_ID, FLIGHT_LINK FROM DEAL_MAPPING WHERE USER_ID=$1`
+	rows, err := pool.Query(ctx, query, testUser.Id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var userId int
+	var flightLink string
+	rows.Next()
+	err = rows.Scan(&userId, &flightLink)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if userId != testUser.Id && flightLink != testDeal.FlightLink {
+		t.Fatalf("expected id: %d and link: %s does not match received \nid:%d and link: %s", testUser.Id, testDeal.FlightLink, userId, flightLink)
+	}
+}

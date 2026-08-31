@@ -60,6 +60,15 @@ const addDealQuery = `INSERT INTO DEALS(
 						ON CONFLICT DO NOTHING
 						`
 
+const mapUserAndDeal = `INSERT INTO DEAL_MAPPING(
+							 USER_ID,
+							 FLIGHT_LINK
+                         )
+    					VALUES (
+						    @USER_ID,
+							@FLIGHT_LINK
+						)
+`
 const getDealsQuery = `SELECT
 							DESTINATION_ID,
 							NAME,
@@ -67,7 +76,7 @@ const getDealsQuery = `SELECT
 							PRICE,
 							AVERAGE_PRICE,
 							DISCOUNT_PERCENTAGE,
-							FLIGHT_LINK,
+							DEALS.FLIGHT_LINK,
 							SERP_API_FLIGHT_LINK,
 							THUMBNAIL,
 							START_DATE,
@@ -80,4 +89,6 @@ const getDealsQuery = `SELECT
 							DESCRIPTION,
 							HIGHLIGHTS
 						FROM DEALS
+						INNER JOIN DEAL_MAPPING
+						ON DEALS.FLIGHT_LINK=DEAL_MAPPING.FLIGHT_LINK AND USER_ID=$1
 `
