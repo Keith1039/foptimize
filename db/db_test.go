@@ -274,4 +274,10 @@ func TestDatabaseClient_AddDeal(t *testing.T) {
 	if !reflect.DeepEqual(deal, testDeal) {
 		t.Fatalf("deal: %+v\n is not equal to testDeal: %+v", deal, testDeal)
 	}
+
+	// dupes should not affect it
+	err = dbClient.AddDeal(ctx, testDeal)
+	if err != nil {
+		t.Fatal(err)
+	}
 }

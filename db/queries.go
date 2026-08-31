@@ -58,6 +58,7 @@ const addDealQuery = `INSERT INTO DEALS(
 							@DESCRIPTION,
 							@HIGHLIGHTS  
 						)
+						ON CONFLICT DO NOTHING
 						`
 
 const getDealsQuery = `SELECT
