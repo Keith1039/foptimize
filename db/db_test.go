@@ -40,13 +40,14 @@ func init() {
 
 func TestDatabaseClient_AddUser(t *testing.T) {
 	testUser := genUser()
-	err := dbClient.AddUser(context.Background(), testUser)
+	ctx := context.Background()
+	err := dbClient.AddUser(ctx, testUser)
 	if err != nil {
 		t.Fatal(err)
 	}
 	// grab latest user
 	query := `SELECT EMAIL, RELEVANT_AIRPORTS, SUBSCRIBED_COUNTRIES, CONFIG, THRESHOLD, CREATED_AT FROM USERS ORDER BY ID DESC LIMIT 1`
-	rows, err := pool.Query(context.Background(), query)
+	rows, err := pool.Query(ctx, query)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,12 +64,13 @@ func TestDatabaseClient_AddUser(t *testing.T) {
 
 func TestDatabaseClient_GetUser(t *testing.T) {
 	testUser := genUser()
-	err := dbClient.AddUser(context.Background(), testUser)
+	ctx := context.Background()
+	err := dbClient.AddUser(ctx, testUser)
 	if err != nil {
 		t.Fatal(err)
 	}
 	query := `SELECT ID FROM USERS WHERE EMAIL=$1`
-	rows, err := pool.Query(context.Background(), query, testUser.Email)
+	rows, err := pool.Query(ctx, query, testUser.Email)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,7 +83,7 @@ func TestDatabaseClient_GetUser(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	user, err := dbClient.GetUserByID(context.Background(), id)
+	user, err := dbClient.GetUserByID(ctx, id)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,11 +96,40 @@ func TestDatabaseClient_GetUser(t *testing.T) {
 
 func TestDatabaseClient_GetUserByEmail(t *testing.T) {
 	testUser := genUser()
-	err := dbClient.AddUser(context.Background(), testUser)
+	ctx := context.Background()
+	err := dbClient.AddUser(ctx, testUser)
 	if err != nil {
 		t.Fatal(err)
 	}
-	user, err := dbClient.GetUserByEmail(context.Background(), testUser.Email)
+	user, err := dbClient.GetUserByEmail(ctx, testUser.Email)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// account for any slight difference
+	testUser.CreatedAt = user.CreatedAt
+	if !reflect.DeepEqual(user, testUser) {
+		t.Fatalf("user: %+v is not equal to test user: %+v", user, testUser)
+	}
+}
+
+func TestDatabaseClient_UpdateUser(t *testing.T) {
+	testUser := genUser()
+	ctx := context.Background()
+	err := dbClient.AddUser(ctx, testUser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// regenerate some fields for update
+	testUser.RelevantAirports = []string{gofakeit.AirlineAirportIATA()}
+	testUser.SubscribedCountries = []string{gofakeit.Country()}
+	testUser.Config = schema.Config{TravelDuration: "1"}
+	testUser.Threshold = gofakeit.Number(0, 100)
+
+	err = dbClient.UpdateUser(ctx, testUser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	user, err := dbClient.GetUserByEmail(ctx, testUser.Email)
 	if err != nil {
 		t.Fatal(err)
 	}

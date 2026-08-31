@@ -31,6 +31,18 @@ func (client DatabaseClient) AddUser(ctx context.Context, user schema.User) erro
 	return err
 }
 
+func (client DatabaseClient) UpdateUser(ctx context.Context, user schema.User) error {
+	args := pgx.NamedArgs{
+		"EMAIL":                user.Email,
+		"RELEVANT_AIRPORTS":    user.RelevantAirports,
+		"SUBSCRIBED_COUNTRIES": user.SubscribedCountries,
+		"CONFIG":               user.Config,
+		"THRESHOLD":            user.Threshold,
+	}
+	_, err := client.db.Exec(ctx, updateUserQuery, args)
+	return err
+}
+
 func (client DatabaseClient) GetUserByID(ctx context.Context, id int) (schema.User, error) {
 	rows, err := client.db.Query(ctx, findUserQueryId, id)
 	if err != nil {
