@@ -28,6 +28,10 @@ func genUser() schema.User {
 	}
 }
 
+func genDeal() schema.Deal {
+	return schema.Deal{}
+}
+
 func getCountForTable(tableName string) int {
 	query := fmt.Sprintf("SELECT COUNT(*) as total FROM %s", tableName)
 	rows, err := pool.Query(context.Background(), query)
@@ -202,4 +206,8 @@ func TestDatabaseClient_DeleteUserByEmail(t *testing.T) {
 	if (beforeTotal - afterTotal) != 1 {
 		t.Fatalf("more than 1 deletion occured. beforeTotal: %d, afterTotal: %d", beforeTotal, afterTotal)
 	}
+}
+
+func TestDatabaseClient_AddDeal(t *testing.T) {
+
 }
