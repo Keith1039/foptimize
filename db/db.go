@@ -42,6 +42,7 @@ func (client DatabaseClient) AddUser(ctx context.Context, user schema.User) (int
 
 func (client DatabaseClient) UpdateUser(ctx context.Context, user schema.User) error {
 	args := pgx.NamedArgs{
+		"ID":                   user.Id,
 		"EMAIL":                user.Email,
 		"RELEVANT_AIRPORTS":    user.RelevantAirports,
 		"SUBSCRIBED_COUNTRIES": user.SubscribedCountries,
@@ -52,21 +53,8 @@ func (client DatabaseClient) UpdateUser(ctx context.Context, user schema.User) e
 	return err
 }
 
-func (client DatabaseClient) GetUserByID(ctx context.Context, id int) (schema.User, error) {
-	rows, err := client.db.Query(ctx, findUserQueryId, id)
-	if err != nil {
-		return schema.User{}, err
-	}
-	// closes row and puts into struct
-	user, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[schema.User])
-	if err != nil {
-		return schema.User{}, err
-	}
-	return user, nil
-}
-
-func (client DatabaseClient) GetUserByEmail(ctx context.Context, email string) (schema.User, error) {
-	rows, err := client.db.Query(ctx, findUserQueryEmail, email)
+func (client DatabaseClient) GetUser(ctx context.Context, id int) (schema.User, error) {
+	rows, err := client.db.Query(ctx, findUserQuery, id)
 	if err != nil {
 		return schema.User{}, err
 	}
@@ -79,16 +67,8 @@ func (client DatabaseClient) GetUserByEmail(ctx context.Context, email string) (
 }
 
 // will need cascade logic
-func (client DatabaseClient) DeleteUserById(ctx context.Context, id int) error {
-	_, err := client.db.Exec(ctx, deleteUserQueryID, id)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (client DatabaseClient) DeleteUserByEmail(ctx context.Context, email string) error {
-	_, err := client.db.Exec(ctx, deleteUserQueryEmail, email)
+func (client DatabaseClient) DeleteUser(ctx context.Context, id int) error {
+	_, err := client.db.Exec(ctx, deleteUserQuery, id)
 	if err != nil {
 		return err
 	}

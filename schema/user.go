@@ -3,6 +3,7 @@ package schema
 import "time"
 
 type User struct {
+	Id                  int       `json:"id" db:"id"`
 	Email               string    `json:"email" db:"email"`
 	RelevantAirports    []string  `json:"relevant_airports" db:"relevant_airports"`
 	SubscribedCountries []string  `json:"subscribed_countries" db:"subscribed_countries"`

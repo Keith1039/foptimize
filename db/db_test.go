@@ -89,8 +89,9 @@ func TestDatabaseClient_AddUser(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	testUser.Id = id
 	// grab latest user
-	query := `SELECT EMAIL, RELEVANT_AIRPORTS, SUBSCRIBED_COUNTRIES, CONFIG, THRESHOLD, CREATED_AT FROM USERS WHERE ID=$1`
+	query := `SELECT ID, EMAIL, RELEVANT_AIRPORTS, SUBSCRIBED_COUNTRIES, CONFIG, THRESHOLD, CREATED_AT FROM USERS WHERE ID=$1`
 	rows, err := pool.Query(ctx, query, id)
 	if err != nil {
 		t.Fatal(err)
@@ -113,25 +114,8 @@ func TestDatabaseClient_GetUser(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	user, err := dbClient.GetUserByID(ctx, id)
-	if err != nil {
-		t.Fatal(err)
-	}
-	// account for any slight difference
-	testUser.CreatedAt = user.CreatedAt
-	if !reflect.DeepEqual(user, testUser) {
-		t.Fatalf("user: %+v is not equal to test user: %+v", user, testUser)
-	}
-}
-
-func TestDatabaseClient_GetUserByEmail(t *testing.T) {
-	testUser := genUser()
-	ctx := context.Background()
-	_, err := dbClient.AddUser(ctx, testUser)
-	if err != nil {
-		t.Fatal(err)
-	}
-	user, err := dbClient.GetUserByEmail(ctx, testUser.Email)
+	testUser.Id = id
+	user, err := dbClient.GetUser(ctx, id)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -145,11 +129,13 @@ func TestDatabaseClient_GetUserByEmail(t *testing.T) {
 func TestDatabaseClient_UpdateUser(t *testing.T) {
 	testUser := genUser()
 	ctx := context.Background()
-	_, err := dbClient.AddUser(ctx, testUser)
+	id, err := dbClient.AddUser(ctx, testUser)
 	if err != nil {
 		t.Fatal(err)
 	}
+	testUser.Id = id
 	// regenerate some fields for update
+	testUser.Email = gofakeit.Email()
 	testUser.RelevantAirports = []string{gofakeit.AirlineAirportIATA()}
 	testUser.SubscribedCountries = []string{gofakeit.Country()}
 	testUser.Config = schema.Config{TravelDuration: "1"}
@@ -159,7 +145,7 @@ func TestDatabaseClient_UpdateUser(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	user, err := dbClient.GetUserByEmail(ctx, testUser.Email)
+	user, err := dbClient.GetUser(ctx, id)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -177,23 +163,9 @@ func TestDatabaseClient_DeleteUserById(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	testUser.Id = id
 	beforeTotal := getCountForTable("USERS")
-	err = dbClient.DeleteUserById(ctx, id)
-	if err != nil {
-		t.Fatal(err)
-	}
-	afterTotal := getCountForTable("USERS")
-	if (beforeTotal - afterTotal) != 1 {
-		t.Fatalf("more than 1 deletion occured. beforeTotal: %d, afterTotal: %d", beforeTotal, afterTotal)
-	}
-}
-
-func TestDatabaseClient_DeleteUserByEmail(t *testing.T) {
-	testUser := genUser()
-	ctx := context.Background()
-	_, err := dbClient.AddUser(ctx, testUser)
-	beforeTotal := getCountForTable("USERS")
-	err = dbClient.DeleteUserByEmail(ctx, testUser.Email)
+	err = dbClient.DeleteUser(ctx, id)
 	if err != nil {
 		t.Fatal(err)
 	}
