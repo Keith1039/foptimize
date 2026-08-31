@@ -156,7 +156,7 @@ func TestDatabaseClient_UpdateUser(t *testing.T) {
 	}
 }
 
-func TestDatabaseClient_DeleteUserById(t *testing.T) {
+func TestDatabaseClient_DeleteUser(t *testing.T) {
 	testUser := genUser()
 	ctx := context.Background()
 	id, err := dbClient.AddUser(ctx, testUser)
