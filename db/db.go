@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"fmt"
 	"github.com/Keith1039/foptimize/schema"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -28,7 +27,6 @@ func (client DatabaseClient) AddUser(ctx context.Context, user schema.User) erro
 		"CONFIG":               user.Config,
 		"THRESHOLD":            user.Threshold,
 	}
-	fmt.Printf("%v+", args)
 	_, err := client.db.Exec(ctx, addUserQuery, args)
 	return err
 }

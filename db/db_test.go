@@ -15,16 +15,17 @@ import (
 
 var dbClient db.DatabaseClient
 
-var testUser = schema.User{
-	Email:               gofakeit.Email(),
-	RelevantAirports:    []string{"YYW"},
-	SubscribedCountries: []string{"China"},
-	Config:              schema.Config{TravelDuration: "2"},
-	Threshold:           50,
-}
-
 var pool *pgxpool.Pool
 
+func genUser() schema.User {
+	return schema.User{
+		Email:               gofakeit.Email(),
+		RelevantAirports:    []string{gofakeit.AirlineAirportIATA()},
+		SubscribedCountries: []string{gofakeit.Country()},
+		Config:              schema.Config{TravelDuration: "2"},
+		Threshold:           gofakeit.Number(0, 100),
+	}
+}
 func init() {
 	var err error
 	dbClient, err = db.NewDatabaseClient(config.DB_URL)
@@ -38,12 +39,13 @@ func init() {
 }
 
 func TestDatabaseClient_AddUser(t *testing.T) {
+	testUser := genUser()
 	err := dbClient.AddUser(context.Background(), testUser)
 	if err != nil {
 		t.Fatal(err)
 	}
 	// grab latest user
-	query := `SELECT EMAIL, RELEVANT_AIRPORTS, SUBSCRIBED_COUNTRIES, CONFIG, THRESHOLD FROM USERS ORDER BY ID DESC LIMIT 1`
+	query := `SELECT EMAIL, RELEVANT_AIRPORTS, SUBSCRIBED_COUNTRIES, CONFIG, THRESHOLD, CREATED_AT FROM USERS ORDER BY ID DESC LIMIT 1`
 	rows, err := pool.Query(context.Background(), query)
 	if err != nil {
 		t.Fatal(err)
@@ -52,6 +54,56 @@ func TestDatabaseClient_AddUser(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// account for any slight difference
+	testUser.CreatedAt = user.CreatedAt
+	if !reflect.DeepEqual(user, testUser) {
+		t.Fatalf("user: %+v is not equal to test user: %+v", user, testUser)
+	}
+}
+
+func TestDatabaseClient_GetUser(t *testing.T) {
+	testUser := genUser()
+	err := dbClient.AddUser(context.Background(), testUser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	query := `SELECT ID FROM USERS WHERE EMAIL=$1`
+	rows, err := pool.Query(context.Background(), query, testUser.Email)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var id int
+	check := rows.Next()
+	if !check {
+		t.Log("no next row!")
+	}
+	err = rows.Scan(&id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	user, err := dbClient.GetUserByID(context.Background(), id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// account for any slight difference
+	testUser.CreatedAt = user.CreatedAt
+	if !reflect.DeepEqual(user, testUser) {
+		t.Fatalf("user: %+v is not equal to test user: %+v", user, testUser)
+	}
+}
+
+func TestDatabaseClient_GetUserByEmail(t *testing.T) {
+	testUser := genUser()
+	err := dbClient.AddUser(context.Background(), testUser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	user, err := dbClient.GetUserByEmail(context.Background(), testUser.Email)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// account for any slight difference
+	testUser.CreatedAt = user.CreatedAt
 	if !reflect.DeepEqual(user, testUser) {
 		t.Fatalf("user: %+v is not equal to test user: %+v", user, testUser)
 	}
