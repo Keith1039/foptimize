@@ -68,3 +68,19 @@ func (client DatabaseClient) GetUserByEmail(ctx context.Context, email string) (
 	}
 	return user, nil
 }
+
+func (client DatabaseClient) DeleteUserById(ctx context.Context, id int) error {
+	_, err := client.db.Exec(ctx, deleteUserQueryID, id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (client DatabaseClient) DeleteUserByEmail(ctx context.Context, email string) error {
+	_, err := client.db.Exec(ctx, deleteUserQueryEmail, email)
+	if err != nil {
+		return err
+	}
+	return nil
+}

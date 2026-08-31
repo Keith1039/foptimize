@@ -2,6 +2,7 @@ package db_test
 
 import (
 	"context"
+	"fmt"
 	"github.com/Keith1039/foptimize/config"
 	"github.com/Keith1039/foptimize/db"
 	"github.com/Keith1039/foptimize/schema"
@@ -26,6 +27,22 @@ func genUser() schema.User {
 		Threshold:           gofakeit.Number(0, 100),
 	}
 }
+
+func getCountForTable(tableName string) int {
+	query := fmt.Sprintf("SELECT COUNT(*) as total FROM %s", tableName)
+	rows, err := pool.Query(context.Background(), query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	rows.Next()
+	var total int
+	err = rows.Scan(&total)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return total
+}
+
 func init() {
 	var err error
 	dbClient, err = db.NewDatabaseClient(config.DB_URL)
@@ -137,5 +154,52 @@ func TestDatabaseClient_UpdateUser(t *testing.T) {
 	testUser.CreatedAt = user.CreatedAt
 	if !reflect.DeepEqual(user, testUser) {
 		t.Fatalf("user: %+v is not equal to test user: %+v", user, testUser)
+	}
+}
+
+func TestDatabaseClient_DeleteUserById(t *testing.T) {
+	testUser := genUser()
+	ctx := context.Background()
+	err := dbClient.AddUser(ctx, testUser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	query := `SELECT ID FROM USERS WHERE EMAIL=$1`
+	rows, err := pool.Query(ctx, query, testUser.Email)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var id int
+	check := rows.Next()
+	if !check {
+		t.Log("no next row!")
+	}
+	err = rows.Scan(&id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	beforeTotal := getCountForTable("USERS")
+	err = dbClient.DeleteUserById(ctx, id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	afterTotal := getCountForTable("USERS")
+	if (beforeTotal - afterTotal) != 1 {
+		t.Fatalf("more than 1 deletion occured. beforeTotal: %d, afterTotal: %d", beforeTotal, afterTotal)
+	}
+}
+
+func TestDatabaseClient_DeleteUserByEmail(t *testing.T) {
+	testUser := genUser()
+	ctx := context.Background()
+	err := dbClient.AddUser(ctx, testUser)
+	beforeTotal := getCountForTable("USERS")
+	err = dbClient.DeleteUserByEmail(ctx, testUser.Email)
+	if err != nil {
+		t.Fatal(err)
+	}
+	afterTotal := getCountForTable("USERS")
+	if (beforeTotal - afterTotal) != 1 {
+		t.Fatalf("more than 1 deletion occured. beforeTotal: %d, afterTotal: %d", beforeTotal, afterTotal)
 	}
 }
