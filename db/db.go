@@ -21,7 +21,7 @@ func NewDatabaseClient(connString string) (DatabaseClient, error) {
 
 // User section
 
-func (client DatabaseClient) AddUser(ctx context.Context, user schema.User) error {
+func (client DatabaseClient) AddUser(ctx context.Context, user schema.User) (int, error) {
 	args := pgx.NamedArgs{
 		"EMAIL":                user.Email,
 		"RELEVANT_AIRPORTS":    user.RelevantAirports,
@@ -29,8 +29,15 @@ func (client DatabaseClient) AddUser(ctx context.Context, user schema.User) erro
 		"CONFIG":               user.Config,
 		"THRESHOLD":            user.Threshold,
 	}
-	_, err := client.db.Exec(ctx, addUserQuery, args)
-	return err
+	rows, err := client.db.Query(ctx, addUserQuery, args)
+	if err != nil {
+		return -1, err
+	}
+	id, err := pgx.CollectOneRow(rows, pgx.RowTo[int])
+	if err != nil {
+		return -1, err
+	}
+	return id, nil
 }
 
 func (client DatabaseClient) UpdateUser(ctx context.Context, user schema.User) error {

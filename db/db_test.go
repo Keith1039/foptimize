@@ -85,13 +85,13 @@ func init() {
 func TestDatabaseClient_AddUser(t *testing.T) {
 	testUser := genUser()
 	ctx := context.Background()
-	err := dbClient.AddUser(ctx, testUser)
+	id, err := dbClient.AddUser(ctx, testUser)
 	if err != nil {
 		t.Fatal(err)
 	}
 	// grab latest user
-	query := `SELECT EMAIL, RELEVANT_AIRPORTS, SUBSCRIBED_COUNTRIES, CONFIG, THRESHOLD, CREATED_AT FROM USERS ORDER BY ID DESC LIMIT 1`
-	rows, err := pool.Query(ctx, query)
+	query := `SELECT EMAIL, RELEVANT_AIRPORTS, SUBSCRIBED_COUNTRIES, CONFIG, THRESHOLD, CREATED_AT FROM USERS WHERE ID=$1`
+	rows, err := pool.Query(ctx, query, id)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,21 +109,7 @@ func TestDatabaseClient_AddUser(t *testing.T) {
 func TestDatabaseClient_GetUser(t *testing.T) {
 	testUser := genUser()
 	ctx := context.Background()
-	err := dbClient.AddUser(ctx, testUser)
-	if err != nil {
-		t.Fatal(err)
-	}
-	query := `SELECT ID FROM USERS WHERE EMAIL=$1`
-	rows, err := pool.Query(ctx, query, testUser.Email)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var id int
-	check := rows.Next()
-	if !check {
-		t.Log("no next row!")
-	}
-	err = rows.Scan(&id)
+	id, err := dbClient.AddUser(ctx, testUser)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -141,7 +127,7 @@ func TestDatabaseClient_GetUser(t *testing.T) {
 func TestDatabaseClient_GetUserByEmail(t *testing.T) {
 	testUser := genUser()
 	ctx := context.Background()
-	err := dbClient.AddUser(ctx, testUser)
+	_, err := dbClient.AddUser(ctx, testUser)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -159,7 +145,7 @@ func TestDatabaseClient_GetUserByEmail(t *testing.T) {
 func TestDatabaseClient_UpdateUser(t *testing.T) {
 	testUser := genUser()
 	ctx := context.Background()
-	err := dbClient.AddUser(ctx, testUser)
+	_, err := dbClient.AddUser(ctx, testUser)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -187,21 +173,7 @@ func TestDatabaseClient_UpdateUser(t *testing.T) {
 func TestDatabaseClient_DeleteUserById(t *testing.T) {
 	testUser := genUser()
 	ctx := context.Background()
-	err := dbClient.AddUser(ctx, testUser)
-	if err != nil {
-		t.Fatal(err)
-	}
-	query := `SELECT ID FROM USERS WHERE EMAIL=$1`
-	rows, err := pool.Query(ctx, query, testUser.Email)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var id int
-	check := rows.Next()
-	if !check {
-		t.Log("no next row!")
-	}
-	err = rows.Scan(&id)
+	id, err := dbClient.AddUser(ctx, testUser)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -219,7 +191,7 @@ func TestDatabaseClient_DeleteUserById(t *testing.T) {
 func TestDatabaseClient_DeleteUserByEmail(t *testing.T) {
 	testUser := genUser()
 	ctx := context.Background()
-	err := dbClient.AddUser(ctx, testUser)
+	_, err := dbClient.AddUser(ctx, testUser)
 	beforeTotal := getCountForTable("USERS")
 	err = dbClient.DeleteUserByEmail(ctx, testUser.Email)
 	if err != nil {
