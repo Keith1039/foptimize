@@ -13,6 +13,7 @@ type Deal struct {
 	StartDate            string  `json:"start_date" db:"start_date"`
 	EndDate              string  `json:"end_date" db:"end_date"`
 	DepartureAirportCode string  `json:"departure_airport_code" db:"departure_airport_code"`
+	ArrivalAirportCode   string  `json:"arrival_airport_code" db:"arrival_airport_code"`
 	FlightDuration       int     `json:"flight_duration" db:"flight_duration"`
 	Stops                int     `json:"stops" db:"stops"`
 	Airline              string  `json:"airline" db:"airline"`
