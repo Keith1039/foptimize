@@ -16,7 +16,7 @@ const deleteUserQueryID = `DELETE FROM USERS WHERE ID=$1`
 const deleteUserQueryEmail = `DELETE FROM USERS WHERE EMAIL=$1`
 
 // Deal queries
-const addDealQuery = `INSERT INTO DEALS (
+const addDealQuery = `INSERT INTO DEALS(
 							DESTINATION_ID,
 							NAME,
 							COUNTRY,
@@ -29,6 +29,7 @@ const addDealQuery = `INSERT INTO DEALS (
 							START_DATE,
 							END_DATE,
 							DEPARTURE_AIRPORT_CODE,
+                  			ARRIVAL_AIRPORT_CODE,
 							FLIGHT_DURATION,
 							STOPS,
 							AIRLINE,
@@ -37,24 +38,25 @@ const addDealQuery = `INSERT INTO DEALS (
 							HIGHLIGHTS
 						)
 						VALUES(
-							DESTINATION_ID=@DESTINATION_ID,
-							NAME=@NAME,
-							COUNTRY=@COUNTRY,
-							PRICE=@PRICE,
-							AVERAGE_PRICE=@AVERAGE_PRICE,
-							DISCOUNT_PERCENTAGE=@DISCOUNT_PERCENTAGE,
-							FLIGHT_LINK=@FLIGHT_LINK,
-							SERP_API_FLIGHT_LINK=@SERP_API_FLIGHT_LINK,
-							THUMBNAIL=@THUMBNAIL,
-							START_DATE=@START_DATE,
-							END_DATE=@END_DATE,
-							DEPARTURE_AIRPORT_CODE=@DEPARTURE_AIRPORT_CODE,
-							FLIGHT_DURATION=@FLIGHT_DURATION,
-							STOPS=@STOPS,
-							AIRLINE=@AIRLINE,
-							AIRLINE_CODE=@AIRLINE_CODE,
-							DESCRIPTION=@DESCRIPTION,
-							HIGHLIGHTS=@HIGHLIGHTS  
+							@DESTINATION_ID,
+							@NAME,
+							@COUNTRY,
+							@PRICE,
+							@AVERAGE_PRICE,
+							@DISCOUNT_PERCENTAGE,
+							@FLIGHT_LINK,
+							@SERP_API_FLIGHT_LINK,
+							@THUMBNAIL,
+							@START_DATE,
+							@END_DATE,
+							@DEPARTURE_AIRPORT_CODE,
+						    @ARRIVAL_AIRPORT_CODE,
+							@FLIGHT_DURATION,
+							@STOPS,
+							@AIRLINE,
+							@AIRLINE_CODE,
+							@DESCRIPTION,
+							@HIGHLIGHTS  
 						)
 						`
 

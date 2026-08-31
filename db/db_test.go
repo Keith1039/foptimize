@@ -12,6 +12,7 @@ import (
 	"log"
 	"reflect"
 	"testing"
+	"time"
 )
 
 var dbClient db.DatabaseClient
@@ -29,7 +30,29 @@ func genUser() schema.User {
 }
 
 func genDeal() schema.Deal {
-	return schema.Deal{}
+	// get the time dates
+	startDate := gofakeit.Date()
+	afterDate := startDate.Add(time.Hour * time.Duration(24*gofakeit.Number(14, 21)))
+	return schema.Deal{
+		DestinationID:        gofakeit.AirlineAirportIATA(),
+		Name:                 gofakeit.City(),
+		Country:              gofakeit.Country(),
+		Price:                gofakeit.Price(500, 4000),
+		AveragePrice:         gofakeit.Price(500, 2000),
+		DiscountPercentage:   gofakeit.Price(0, 100),
+		FlightLink:           gofakeit.URL(),
+		SerpApiFlightLink:    gofakeit.URL(),
+		Thumbnail:            gofakeit.URL(),
+		StartDate:            startDate.String(),
+		EndDate:              afterDate.String(),
+		DepartureAirportCode: gofakeit.AirlineAirportIATA(),
+		FlightDuration:       gofakeit.Number(0, 2000),
+		Stops:                gofakeit.Number(0, 10),
+		Airline:              gofakeit.AirlineAirport(),
+		AirlineCode:          "",
+		Description:          "",
+		Highlights:           "",
+	}
 }
 
 func getCountForTable(tableName string) int {
@@ -208,6 +231,47 @@ func TestDatabaseClient_DeleteUserByEmail(t *testing.T) {
 	}
 }
 
+// Deal stuff
 func TestDatabaseClient_AddDeal(t *testing.T) {
-
+	testDeal := genDeal()
+	link := testDeal.FlightLink
+	ctx := context.Background()
+	err := dbClient.AddDeal(ctx, testDeal)
+	if err != nil {
+		t.Fatal(err)
+	}
+	query := `SELECT
+				DESTINATION_ID,
+				NAME,
+				COUNTRY,
+				PRICE,
+				AVERAGE_PRICE,
+				DISCOUNT_PERCENTAGE,
+				FLIGHT_LINK,
+				SERP_API_FLIGHT_LINK,
+				THUMBNAIL,
+				START_DATE,
+				END_DATE,
+				DEPARTURE_AIRPORT_CODE,
+				ARRIVAL_AIRPORT_CODE,
+				FLIGHT_DURATION,
+				STOPS,
+				AIRLINE,
+				AIRLINE_CODE,
+				DESCRIPTION,
+				HIGHLIGHTS
+			FROM DEALS
+			WHERE FLIGHT_LINK=$1
+				`
+	rows, err := pool.Query(ctx, query, link)
+	if err != nil {
+		t.Fatal(err)
+	}
+	deal, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[schema.Deal])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(deal, testDeal) {
+		t.Fatalf("deal: %+v\n is not equal to testDeal: %+v", deal, testDeal)
+	}
 }

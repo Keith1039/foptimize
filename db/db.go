@@ -104,6 +104,7 @@ func (client DatabaseClient) AddDeal(ctx context.Context, deal schema.Deal) erro
 		"START_DATE":             deal.StartDate,
 		"END_DATE":               deal.EndDate,
 		"DEPARTURE_AIRPORT_CODE": deal.DepartureAirportCode,
+		"ARRIVAL_AIRPORT_CODE":   deal.ArrivalAirportCode,
 		"FLIGHT_DURATION":        deal.FlightDuration,
 		"STOPS":                  deal.Stops,
 		"AIRLINE":                deal.Airline,
