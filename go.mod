@@ -6,7 +6,6 @@ require (
 	github.com/brianvoe/gofakeit/v7 v7.16.0
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/joho/godotenv v1.5.1
-	github.com/serpapi/serpapi-golang v1.1.0
 )
 
 require (
