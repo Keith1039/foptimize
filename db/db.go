@@ -69,6 +69,7 @@ func (client DatabaseClient) GetUser(ctx context.Context, id int) (schema.User, 
 }
 
 // will need cascade logic
+
 func (client DatabaseClient) DeleteUser(ctx context.Context, id int) error {
 	_, err := client.db.Exec(ctx, deleteUserQuery, id)
 	if err != nil {
@@ -102,47 +103,6 @@ func getDealArgs(deal schema.Deal) pgx.NamedArgs {
 		"HIGHLIGHTS":             deal.Highlights,
 	}
 }
-
-//func (client DatabaseClient) AddDeal(ctx context.Context, deal schema.Deal) error {
-//	args := pgx.NamedArgs{
-//		"DESTINATION_ID":         deal.DestinationID,
-//		"NAME":                   deal.Name,
-//		"COUNTRY":                deal.Country,
-//		"PRICE":                  deal.Price,
-//		"AVERAGE_PRICE":          deal.AveragePrice,
-//		"DISCOUNT_PERCENTAGE":    deal.DiscountPercentage,
-//		"FLIGHT_LINK":            deal.FlightLink,
-//		"SERP_API_FLIGHT_LINK":   deal.SerpApiFlightLink,
-//		"THUMBNAIL":              deal.Thumbnail,
-//		"START_DATE":             deal.StartDate,
-//		"END_DATE":               deal.EndDate,
-//		"DEPARTURE_AIRPORT_CODE": deal.DepartureAirportCode,
-//		"ARRIVAL_AIRPORT_CODE":   deal.ArrivalAirportCode,
-//		"FLIGHT_DURATION":        deal.FlightDuration,
-//		"STOPS":                  deal.Stops,
-//		"AIRLINE":                deal.Airline,
-//		"AIRLINE_CODE":           deal.AirlineCode,
-//		"DESCRIPTION":            deal.Description,
-//		"HIGHLIGHTS":             deal.Highlights,
-//	}
-//	_, err := client.db.Exec(ctx, addDealQuery, args)
-//	if err != nil {
-//		return err
-//	}
-//	return nil
-//}
-//
-//func (client DatabaseClient) MapUserAndDeal(ctx context.Context, deal schema.Deal, id int) error {
-//	args := pgx.NamedArgs{
-//		"USER_ID":     id,
-//		"FLIGHT_LINK": deal.FlightLink,
-//	}
-//	_, err := client.db.Exec(ctx, mapUserAndDeal, args)
-//	if err != nil {
-//		return err
-//	}
-//	return nil
-//}
 
 func (client DatabaseClient) SaveDeals(ctx context.Context, id int, deals []schema.Deal) error {
 	var rollBackErr error
