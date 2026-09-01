@@ -3,13 +3,14 @@ package db_test
 import (
 	"context"
 	"fmt"
-	"github.com/Keith1039/foptimize/config"
 	"github.com/Keith1039/foptimize/db"
 	"github.com/Keith1039/foptimize/schema"
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/joho/godotenv"
 	"log"
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -18,6 +19,13 @@ import (
 var dbClient db.DatabaseClient
 
 var pool *pgxpool.Pool
+
+func init() {
+	err := godotenv.Load("../.env")
+	if err != nil {
+		log.Fatal(err)
+	}
+}
 
 func genUser() schema.User {
 	return schema.User{
@@ -72,11 +80,11 @@ func getCountForTable(tableName string) int {
 
 func init() {
 	var err error
-	dbClient, err = db.NewDatabaseClient(config.DB_URL)
+	dbClient, err = db.NewDatabaseClient(os.Getenv("DB_URL"))
 	if err != nil {
 		log.Fatal(err)
 	}
-	pool, err = pgxpool.New(context.Background(), config.DB_URL)
+	pool, err = pgxpool.New(context.Background(), os.Getenv("DB_URL"))
 	if err != nil {
 		log.Fatal(err)
 	}
