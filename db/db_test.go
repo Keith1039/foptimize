@@ -156,6 +156,38 @@ func TestDatabaseClient_UpdateUser(t *testing.T) {
 	}
 }
 
+func TestDatabaseClient_SaveDeals(t *testing.T) {
+	testUser := genUser()
+	ctx := context.Background()
+	id, err := dbClient.AddUser(ctx, testUser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testUser.Id = id
+	oldDeal := genDeal()
+	secondDeal := genDeal()
+	// old deal will be allowed
+	oldDeal.Country = testUser.SubscribedCountries[0]
+	err = dbClient.SaveDeals(ctx, testUser.Id, []schema.Deal{oldDeal, secondDeal})
+	if err != nil {
+		t.Fatal(err)
+	}
+	query := `SELECT COUNT(*) as total FROM DEAL_MAPPING WHERE USER_ID=$1`
+	rows, err := pool.Query(ctx, query, testUser.Id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rows.Next()
+	var total int
+	err = rows.Scan(&total)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if total != 1 {
+		t.Fatalf("deals: total should be 2, but got %d", total)
+	}
+}
+
 func TestDatabaseClient_DeleteUser(t *testing.T) {
 	testUser := genUser()
 	ctx := context.Background()
@@ -175,93 +207,6 @@ func TestDatabaseClient_DeleteUser(t *testing.T) {
 	}
 }
 
-// Deal stuff
-func TestDatabaseClient_AddDeal(t *testing.T) {
-	testDeal := genDeal()
-	link := testDeal.FlightLink
-	ctx := context.Background()
-	err := dbClient.AddDeal(ctx, testDeal)
-	if err != nil {
-		t.Fatal(err)
-	}
-	query := `SELECT
-				DESTINATION_ID,
-				NAME,
-				COUNTRY,
-				PRICE,
-				AVERAGE_PRICE,
-				DISCOUNT_PERCENTAGE,
-				FLIGHT_LINK,
-				SERP_API_FLIGHT_LINK,
-				THUMBNAIL,
-				START_DATE,
-				END_DATE,
-				DEPARTURE_AIRPORT_CODE,
-				ARRIVAL_AIRPORT_CODE,
-				FLIGHT_DURATION,
-				STOPS,
-				AIRLINE,
-				AIRLINE_CODE,
-				DESCRIPTION,
-				HIGHLIGHTS
-			FROM DEALS
-			WHERE FLIGHT_LINK=$1
-				`
-	rows, err := pool.Query(ctx, query, link)
-	if err != nil {
-		t.Fatal(err)
-	}
-	deal, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[schema.Deal])
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !reflect.DeepEqual(deal, testDeal) {
-		t.Fatalf("deal: %+v\n is not equal to testDeal: %+v", deal, testDeal)
-	}
-
-	// dupes should not affect it
-	err = dbClient.AddDeal(ctx, testDeal)
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestDatabaseClient_MapUserAndDeal(t *testing.T) {
-	// generate user
-	testUser := genUser()
-	ctx := context.Background()
-	id, err := dbClient.AddUser(ctx, testUser)
-	if err != nil {
-		t.Fatal(err)
-	}
-	testUser.Id = id
-	// generate deals
-	testDeal := genDeal()
-	err = dbClient.AddDeal(ctx, testDeal)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = dbClient.MapUserAndDeal(ctx, testDeal, testUser.Id)
-	if err != nil {
-		t.Fatal(err)
-	}
-	query := `SELECT USER_ID, FLIGHT_LINK FROM DEAL_MAPPING WHERE USER_ID=$1`
-	rows, err := pool.Query(ctx, query, testUser.Id)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var userId int
-	var flightLink string
-	rows.Next()
-	err = rows.Scan(&userId, &flightLink)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if userId != testUser.Id && flightLink != testDeal.FlightLink {
-		t.Fatalf("expected id: %d and link: %s does not match received \nid:%d and link: %s", testUser.Id, testDeal.FlightLink, userId, flightLink)
-	}
-}
-
 func TestDatabaseClient_GetUserDeals(t *testing.T) {
 	// generate user
 	testUser := genUser()
@@ -272,16 +217,15 @@ func TestDatabaseClient_GetUserDeals(t *testing.T) {
 	}
 	testUser.Id = id
 	dealAmount := 2
+	testDeals := make([]schema.Deal, 2)
 	for i := 0; i < dealAmount; i++ {
-		testDeal := genDeal()
-		err = dbClient.AddDeal(ctx, testDeal)
-		if err != nil {
-			t.Fatal(err)
-		}
-		err = dbClient.MapUserAndDeal(ctx, testDeal, testUser.Id)
-		if err != nil {
-			return
-		}
+		deal := genDeal()
+		deal.Country = testUser.SubscribedCountries[0]
+		testDeals[i] = deal
+	}
+	err = dbClient.SaveDeals(ctx, testUser.Id, testDeals)
+	if err != nil {
+		t.Fatal(err)
 	}
 	deals, err := dbClient.GetUserDeals(ctx, testUser.Id)
 	if err != nil {
