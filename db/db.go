@@ -68,6 +68,18 @@ func (client DatabaseClient) GetUser(ctx context.Context, id int) (schema.User, 
 	return user, nil
 }
 
+func (client DatabaseClient) GetUsers(ctx context.Context) ([]schema.User, error) {
+	rows, err := client.db.Query(ctx, getAllUsersQuery)
+	if err != nil {
+		return []schema.User{}, err
+	}
+	users, err := pgx.CollectRows(rows, pgx.RowToStructByName[schema.User])
+	if err != nil {
+		return []schema.User{}, err
+	}
+	return users, nil
+}
+
 // will need cascade logic
 
 func (client DatabaseClient) DeleteUser(ctx context.Context, id int) error {

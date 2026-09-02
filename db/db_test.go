@@ -134,6 +134,24 @@ func TestDatabaseClient_GetUser(t *testing.T) {
 	}
 }
 
+func TestDatabaseClient_GetUsers(t *testing.T) {
+	userCount := getCountForTable("users")
+	testUser := genUser()
+	ctx := context.Background()
+	id, err := dbClient.AddUser(ctx, testUser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testUser.Id = id
+	users, err := dbClient.GetUsers(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if (len(users) - userCount) != 1 {
+		t.Fatalf("user count difference more than 1 detected. difference = %d", len(users)-userCount)
+	}
+
+}
 func TestDatabaseClient_UpdateUser(t *testing.T) {
 	testUser := genUser()
 	ctx := context.Background()
