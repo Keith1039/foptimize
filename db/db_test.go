@@ -191,12 +191,20 @@ func TestDatabaseClient_SaveDeals(t *testing.T) {
 	}
 	testUser.Id = id
 	oldDeal := genDeal()
+	oldDeal.DiscountPercentage = float64(testUser.Threshold) - 1
 	secondDeal := genDeal()
-	// old deal will be allowed
+	secondDeal.DiscountPercentage = float64(testUser.Threshold)
+	thirdDeal := genDeal()
+	thirdDeal.DiscountPercentage = float64(testUser.Threshold)
+	// old deal and third deal will be allowed
+	thirdDeal.Country = testUser.SubscribedCountries[0]
 	oldDeal.Country = testUser.SubscribedCountries[0]
-	err = dbClient.SaveDeals(ctx, testUser.Id, []schema.Deal{oldDeal, secondDeal})
+	metThreshold, err := dbClient.SaveDeals(ctx, testUser.Id, []schema.Deal{oldDeal, secondDeal, thirdDeal})
 	if err != nil {
 		t.Fatal(err)
+	}
+	if len(metThreshold) != 1 {
+		t.Fatalf("expected %d, received %d deals that met threshold", 1, len(metThreshold))
 	}
 	query := `SELECT COUNT(*) as total FROM DEAL_MAPPING WHERE USER_ID=$1`
 	rows, err := pool.Query(ctx, query, testUser.Id)
@@ -209,7 +217,7 @@ func TestDatabaseClient_SaveDeals(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if total != 1 {
+	if total != 2 {
 		t.Fatalf("deals: total should be 2, but got %d", total)
 	}
 }
@@ -249,7 +257,7 @@ func TestDatabaseClient_GetUserDeals(t *testing.T) {
 		deal.Country = testUser.SubscribedCountries[0]
 		testDeals[i] = deal
 	}
-	err = dbClient.SaveDeals(ctx, testUser.Id, testDeals)
+	_, err = dbClient.SaveDeals(ctx, testUser.Id, testDeals)
 	if err != nil {
 		t.Fatal(err)
 	}

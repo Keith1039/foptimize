@@ -116,15 +116,16 @@ func getDealArgs(deal schema.Deal) pgx.NamedArgs {
 	}
 }
 
-func (client DatabaseClient) SaveDeals(ctx context.Context, id int, deals []schema.Deal) error {
+func (client DatabaseClient) SaveDeals(ctx context.Context, id int, deals []schema.Deal) ([]schema.Deal, error) {
 	var rollBackErr error
+	var metThreshold []schema.Deal
 	user, err := client.GetUser(ctx, id)
 	if err != nil {
-		return err
+		return []schema.Deal{}, err
 	}
 	tx, err := client.db.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
-		return err
+		return []schema.Deal{}, err
 	}
 	for _, deal := range deals {
 		// check if it's a subscribed country... maybe this should be a map for quick access?
@@ -136,7 +137,7 @@ func (client DatabaseClient) SaveDeals(ctx context.Context, id int, deals []sche
 				// doesn't matter
 				rollBackErr = tx.Rollback(ctx)
 				fmt.Printf("Rollaback Error occured: %v", rollBackErr)
-				return err
+				return []schema.Deal{}, err
 			}
 
 			mappingArgs := pgx.NamedArgs{
@@ -149,15 +150,20 @@ func (client DatabaseClient) SaveDeals(ctx context.Context, id int, deals []sche
 				// doesn't matter
 				rollBackErr = tx.Rollback(ctx)
 				fmt.Printf("Rollaback Error occured: %v", rollBackErr)
-				return err
+				return []schema.Deal{}, err
 			}
+			// next we check if threshold is met, so we can return them
+			if deal.DiscountPercentage >= float64(user.Threshold) {
+				metThreshold = append(metThreshold, deal)
+			}
+
 		}
 	}
 	err = tx.Commit(ctx)
 	if err != nil {
-		return err
+		return []schema.Deal{}, err
 	}
-	return nil
+	return metThreshold, err
 }
 
 func (client DatabaseClient) GetUserDeals(ctx context.Context, id int) ([]schema.Deal, error) {
