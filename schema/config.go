@@ -6,7 +6,11 @@ import (
 )
 
 type Config struct {
+	Type           string `json:"type"`
+	TravelClass    string `json:"travel_class"`
 	TravelDuration string `json:"travel_duration"`
+	Stops          string `json:"stops"`
+	MaxDuration    string `json:"max_duration"`
 }
 
 func (c Config) TransformParams() map[string]string {
