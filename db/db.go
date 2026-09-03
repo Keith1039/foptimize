@@ -6,6 +6,7 @@ import (
 	"github.com/Keith1039/foptimize/schema"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"log"
 	"slices"
 )
 
@@ -116,6 +117,18 @@ func getDealArgs(deal schema.Deal) pgx.NamedArgs {
 	}
 }
 
+func (client DatabaseClient) dealExistsForUser(ctx context.Context, id int, flightLink string) bool {
+	args := pgx.NamedArgs{
+		"USER_ID":     id,
+		"FLIGHT_LINK": flightLink,
+	}
+	rows, err := client.db.Query(ctx, getDealForUserQuery, args)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return rows.Next()
+}
+
 func (client DatabaseClient) SaveDeals(ctx context.Context, id int, deals []schema.Deal) ([]schema.Deal, error) {
 	var rollBackErr error
 	var metThreshold []schema.Deal
@@ -128,6 +141,10 @@ func (client DatabaseClient) SaveDeals(ctx context.Context, id int, deals []sche
 		return []schema.Deal{}, err
 	}
 	for _, deal := range deals {
+		// skip deals that already exist for the user
+		if client.dealExistsForUser(ctx, id, deal.FlightLink) {
+			continue
+		}
 		// check if it's a subscribed country... maybe this should be a map for quick access?
 		if slices.Contains(user.SubscribedCountries, deal.Country) {
 			// add the deal

@@ -220,6 +220,14 @@ func TestDatabaseClient_SaveDeals(t *testing.T) {
 	if total != 2 {
 		t.Fatalf("deals: total should be 2, but got %d", total)
 	}
+
+	metThreshold, err = dbClient.SaveDeals(ctx, testUser.Id, []schema.Deal{oldDeal, thirdDeal})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(metThreshold) != 0 {
+		t.Fatalf("existing deals should not be returned, but got %d", len(metThreshold))
+	}
 }
 
 func TestDatabaseClient_DeleteUser(t *testing.T) {

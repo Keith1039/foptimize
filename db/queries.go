@@ -16,6 +16,7 @@ const getAllUsersQuery = `SELECT ID, EMAIL, RELEVANT_AIRPORTS, SUBSCRIBED_COUNTR
 const deleteUserQuery = `DELETE FROM USERS WHERE ID=$1`
 
 // Deal queries
+const getDealForUserQuery = `SELECT * FROM DEAL_MAPPING WHERE USER_ID=@USER_ID AND FLIGHT_LINK=@FLIGHT_LINK`
 const addDealQuery = `INSERT INTO DEALS(
 							DESTINATION_ID,
 							NAME,
@@ -58,7 +59,7 @@ const addDealQuery = `INSERT INTO DEALS(
 							@DESCRIPTION,
 							@HIGHLIGHTS  
 						)
-						ON CONFLICT DO NOTHING
+						ON CONFLICT DO NOTHING 
 						`
 
 const mapUserAndDeal = `INSERT INTO DEAL_MAPPING(
