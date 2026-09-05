@@ -22,6 +22,10 @@ func NewDatabaseClient(connString string) (DatabaseClient, error) {
 	return DatabaseClient{db: pool}, nil
 }
 
+func NewDatabaseClientWithPool(pool *pgxpool.Pool) (DatabaseClient, error) {
+	return DatabaseClient{db: pool}, nil
+}
+
 // User section
 
 func (client DatabaseClient) AddUser(ctx context.Context, user schema.User) (int, error) {
