@@ -198,3 +198,7 @@ func (client DatabaseClient) GetUserDeals(ctx context.Context, id int) ([]schema
 	}
 	return deals, nil
 }
+
+func (client DatabaseClient) Close() {
+	client.db.Close()
+}
