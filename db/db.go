@@ -157,7 +157,7 @@ func (client DatabaseClient) SaveDeals(ctx context.Context, id int, deals []sche
 			if err != nil {
 				// doesn't matter
 				rollBackErr = tx.Rollback(ctx)
-				fmt.Printf("Rollaback Error occured: %v", rollBackErr)
+				fmt.Printf("Rollback Error occured: %v", rollBackErr)
 				return []schema.Deal{}, err
 			}
 
@@ -170,7 +170,7 @@ func (client DatabaseClient) SaveDeals(ctx context.Context, id int, deals []sche
 			if err != nil {
 				// doesn't matter
 				rollBackErr = tx.Rollback(ctx)
-				fmt.Printf("Rollaback Error occured: %v", rollBackErr)
+				fmt.Printf("Rollback Error occured: %v", rollBackErr)
 				return []schema.Deal{}, err
 			}
 			// next we check if threshold is met, so we can return them
