@@ -21,6 +21,7 @@ func TestParseDeals(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Logf("%+v", deals)
 	if len(deals) == 0 {
 		t.Fatal("deals could not be parsed")
 	}
