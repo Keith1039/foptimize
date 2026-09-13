@@ -54,6 +54,7 @@ func genDeal() schema.Deal {
 		StartDate:            startDate.String(),
 		EndDate:              afterDate.String(),
 		DepartureAirportCode: gofakeit.AirlineAirportIATA(),
+		ArrivalAirportCode:   gofakeit.AirlineAirportIATA(),
 		FlightDuration:       gofakeit.Number(0, 2000),
 		Stops:                gofakeit.Number(0, 10),
 		Airline:              gofakeit.AirlineAirport(),

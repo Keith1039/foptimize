@@ -1,5 +1,10 @@
 package schema
 
+import (
+	"fmt"
+	"reflect"
+)
+
 type Deal struct {
 	DestinationID        string  `json:"destination_id" db:"destination_id"`
 	Name                 string  `json:"name" db:"name"`
@@ -24,4 +29,48 @@ type Deal struct {
 
 type Deals struct {
 	Deals []Deal `json:"deals"`
+}
+
+// stops is a special case in which it is required but CAN be its default of 0
+// so it is not in this list of necessary keys
+var necessaryKeys = map[string]bool{
+	"StartDate":            true,
+	"EndDate":              true,
+	"DepartureAirportCode": true,
+	"ArrivalAirportCode":   true,
+	"FlightDuration":       true,
+	"FlightLink":           true,
+	"Country":              true,
+	"Price":                true,
+}
+
+func (d Deal) Validate() error {
+	v := reflect.ValueOf(d)
+	t := v.Type()
+	for i := 0; i < v.NumField(); i++ {
+		fieldName := t.Field(i).Name
+		if _, ok := necessaryKeys[fieldName]; ok {
+			fieldType := t.Field(i).Type
+			switch fieldType {
+			case reflect.TypeOf("string"):
+				value := v.Field(i).String()
+				if value == "" {
+					return fmt.Errorf("field '%s' is required", fieldName)
+				}
+			case reflect.TypeOf(0):
+				value := v.Field(i).Int()
+				if value == 0 {
+					return fmt.Errorf("field '%s' is required", fieldName)
+				}
+			case reflect.TypeOf(float64(0)):
+				value := v.Field(i).Float()
+				if value == float64(0) {
+					return fmt.Errorf("field '%s' is required", fieldName)
+				}
+			default:
+				return fmt.Errorf("field '%s' is of an unrecognized type of %s", fieldName, fieldType)
+			}
+		}
+	}
+	return nil
 }
