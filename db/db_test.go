@@ -285,3 +285,29 @@ func TestDatabaseClient_GetUserDeals(t *testing.T) {
 		t.Fatalf("expect %d deal. received %d deals", dealAmount, len(deals))
 	}
 }
+
+func TestDatabaseClient_GetDeal(t *testing.T) {
+	// generate user
+	testUser := genUser()
+	ctx := context.Background()
+	id, err := dbClient.AddUser(ctx, testUser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testUser.Id = id
+	deal := genDeal()
+	deal.Country = testUser.SubscribedCountries[0]
+	deal.DiscountPercentage = float64(testUser.Threshold) + 1
+	_, err = dbClient.SaveDeals(ctx, testUser.Id, []schema.Deal{deal})
+	if err != nil {
+		t.Fatal(err)
+	}
+	retrievedDeal, err := dbClient.GetDeal(ctx, deal.FlightLink)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(deal, retrievedDeal) {
+		t.Fatalf("deal '%+v' is not equal to retrieved deal '%+v'", deal, retrievedDeal)
+	}
+
+}

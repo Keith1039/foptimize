@@ -16,6 +16,29 @@ const getAllUsersQuery = `SELECT ID, EMAIL, RELEVANT_AIRPORTS, SUBSCRIBED_COUNTR
 const deleteUserQuery = `DELETE FROM USERS WHERE ID=$1`
 
 // Deal queries
+const getDealQuery = `SELECT
+							DESTINATION_ID,
+							NAME,
+							COUNTRY,
+							PRICE,
+							AVERAGE_PRICE,
+							DISCOUNT_PERCENTAGE,
+							FLIGHT_LINK,
+							SERP_API_FLIGHT_LINK,
+							THUMBNAIL,
+							START_DATE,
+							END_DATE,
+							DEPARTURE_AIRPORT_CODE,
+							ARRIVAL_AIRPORT_CODE,
+							FLIGHT_DURATION,
+							STOPS,
+							AIRLINE,
+							AIRLINE_CODE,
+							DESCRIPTION,
+							HIGHLIGHTS
+						FROM DEALS
+						WHERE FLIGHT_LINK=$1
+						`
 const getDealForUserQuery = `SELECT * FROM DEAL_MAPPING WHERE USER_ID=@USER_ID AND FLIGHT_LINK=@FLIGHT_LINK`
 const addDealQuery = `INSERT INTO DEALS(
 							DESTINATION_ID,
@@ -62,14 +85,7 @@ const addDealQuery = `INSERT INTO DEALS(
 						ON CONFLICT DO NOTHING 
 						`
 
-const mapUserAndDeal = `INSERT INTO DEAL_MAPPING(
-							 USER_ID,
-							 FLIGHT_LINK
-                         )
-    					VALUES (
-						    @USER_ID,
-							@FLIGHT_LINK
-						)
+const mapUserAndDeal = `INSERT INTO DEAL_MAPPING(USER_ID, FLIGHT_LINK) VALUES (@USER_ID, @FLIGHT_LINK)
 `
 const getDealsQuery = `SELECT
 							DESTINATION_ID,
@@ -94,4 +110,16 @@ const getDealsQuery = `SELECT
 						FROM DEALS
 						INNER JOIN DEAL_MAPPING
 						ON DEALS.FLIGHT_LINK=DEAL_MAPPING.FLIGHT_LINK AND USER_ID=$1
-`
+						`
+
+// Email Tracking queries
+const addEmailTrackingQuery = `INSERT INTO EMAIL_TRACKING(EMAIL_ID, USER_ID, FLIGHT_LINK) VALUES (@EMAIL_ID, @USER_ID, @FLIGHT_LINK)`
+
+const getUnsentEmailsQuery = `SELECT
+								USER_ID,
+								FLIGHT_LINK
+	                      FROM DEAL_MAPPING
+						  LEFT JOIN EMAIL_TRACKING
+						  ON DEAL_MAPPING.USER_ID=EMAIL_TRACKING.USER_ID AND DEAL_MAPPING.FLIGHT_LINK=EMAIL_TRACKING.FLIGHT_LINK
+						  WHERE EMAIL_TRACKING.USER_ID=NULL AND EMAIL_TRACKING.FLIGHT_LINK=NULL
+						  `

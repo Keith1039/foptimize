@@ -96,7 +96,6 @@ func (client DatabaseClient) DeleteUser(ctx context.Context, id int) error {
 }
 
 // Deals section
-
 func getDealArgs(deal schema.Deal) pgx.NamedArgs {
 	return pgx.NamedArgs{
 		"DESTINATION_ID":         deal.DestinationID,
@@ -202,6 +201,43 @@ func (client DatabaseClient) GetUserDeals(ctx context.Context, id int) ([]schema
 		return []schema.Deal{}, err
 	}
 	return deals, nil
+}
+
+func (client DatabaseClient) GetDeal(ctx context.Context, flightLink string) (schema.Deal, error) {
+	rows, err := client.db.Query(ctx, getDealQuery, flightLink)
+	if err != nil {
+		return schema.Deal{}, err
+	}
+	deal, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[schema.Deal])
+	if err != nil {
+		return schema.Deal{}, err
+	}
+	return deal, nil
+}
+
+func (client DatabaseClient) AddSentEmail(ctx context.Context, id int, flightLink string, emailId string) error {
+	mappingArgs := pgx.NamedArgs{
+		"EMAIL_ID":    emailId,
+		"USER_ID":     id,
+		"FLIGHT_LINK": flightLink,
+	}
+	_, err := client.db.Exec(ctx, addEmailTrackingQuery, mappingArgs)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (client DatabaseClient) GetUnsentEmails(ctx context.Context) ([]schema.UserDealLink, error) {
+	rows, err := client.db.Query(ctx, getUnsentEmailsQuery)
+	if err != nil {
+		return []schema.UserDealLink{}, err
+	}
+	dealLinks, err := pgx.CollectRows(rows, pgx.RowToStructByName[schema.UserDealLink])
+	if err != nil {
+		return []schema.UserDealLink{}, err
+	}
+	return dealLinks, nil
 }
 
 func (client DatabaseClient) Close() {
