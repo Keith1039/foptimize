@@ -120,10 +120,18 @@ func getDealArgs(deal schema.Deal) pgx.NamedArgs {
 	}
 }
 
-func (client DatabaseClient) dealExistsForUser(ctx context.Context, id int, flightLink string) bool {
+func (client DatabaseClient) dealExistsForUser(ctx context.Context, id int, deal schema.Deal) bool {
 	args := pgx.NamedArgs{
-		"USER_ID":     id,
-		"FLIGHT_LINK": flightLink,
+		"USER_ID":                id,
+		"NAME":                   deal.Name,
+		"COUNTRY":                deal.Country,
+		"PRICE":                  deal.Price,
+		"START_DATE":             deal.StartDate,
+		"END_DATE":               deal.EndDate,
+		"DEPARTURE_AIRPORT_CODE": deal.DepartureAirportCode,
+		"ARRIVAL_AIRPORT_CODE":   deal.ArrivalAirportCode,
+		"FLIGHT_DURATION":        deal.FlightDuration,
+		"STOPS":                  deal.Stops,
 	}
 	rows, err := client.db.Query(ctx, getDealForUserQuery, args)
 	if err != nil {
@@ -150,7 +158,7 @@ func (client DatabaseClient) SaveDeals(ctx context.Context, id int, deals []sche
 			return []schema.Deal{}, fmt.Errorf("deal with link '%s' failed validation with error %w", deal.FlightLink, err)
 		}
 		// skip deals that already exist for the user
-		if client.dealExistsForUser(ctx, id, deal.FlightLink) {
+		if client.dealExistsForUser(ctx, id, deal) {
 			continue
 		}
 		// check if it's a subscribed country... maybe this should be a map for quick access?
