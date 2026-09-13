@@ -79,6 +79,22 @@ func getCountForTable(tableName string) int {
 	return total
 }
 
+func deleteAllDeals() {
+	ctx := context.Background()
+	_, err := pool.Exec(ctx, `DELETE FROM EMAIL_TRACKING`)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = pool.Exec(ctx, `DELETE FROM DEAL_MAPPING`)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = pool.Exec(ctx, `DELETE FROM DEALS`)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func init() {
 	var err error
 	dbClient, err = db.NewDatabaseClient(os.Getenv("DB_URL"))
@@ -344,5 +360,47 @@ func TestDatabaseClient_AddSentEmail(t *testing.T) {
 	}
 	if *total != 1 {
 		t.Fatalf("should have found one result, but got %d", *total)
+	}
+}
+
+func TestDatabaseClient_GetUnsentEmails(t *testing.T) {
+	// generate user
+	testUser := genUser()
+	ctx := context.Background()
+	id, err := dbClient.AddUser(ctx, testUser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testUser.Id = id
+	// first deal will have an email sent
+	deal := genDeal()
+	deal.Country = testUser.SubscribedCountries[0]
+	deal.DiscountPercentage = float64(testUser.Threshold) + 1
+
+	// deal will be linked but will not have an email sent
+	deal2 := genDeal()
+	deal2.DiscountPercentage = float64(testUser.Threshold) + 1
+	deal2.Country = testUser.SubscribedCountries[0]
+	// we have to deal with old entries first
+	deleteAllDeals()
+	_, err = dbClient.SaveDeals(ctx, testUser.Id, []schema.Deal{deal, deal2})
+	if err != nil {
+		t.Fatal(err)
+	}
+	emailId := gofakeit.UUID()
+	err = dbClient.AddSentEmail(ctx, id, deal.FlightLink, emailId)
+	if err != nil {
+		t.Fatal(err)
+	}
+	userDealLinks, err := dbClient.GetUnsentEmails(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(userDealLinks) != 1 {
+		t.Fatalf("expected array of size 1, got %d", len(userDealLinks))
+	}
+	userDealLink := userDealLinks[0]
+	if userDealLink.UserId != id && userDealLink.FlightLink != deal2.FlightLink {
+		t.Fatalf("expected user id of '%d' and flight link '%s' but received user id of '%d' and flight link of '%s'", id, deal2.FlightLink, userDealLink.UserId, userDealLink.FlightLink)
 	}
 }
