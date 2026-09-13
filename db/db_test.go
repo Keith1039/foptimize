@@ -311,3 +311,38 @@ func TestDatabaseClient_GetDeal(t *testing.T) {
 	}
 
 }
+
+func TestDatabaseClient_AddSentEmail(t *testing.T) {
+	// generate user
+	testUser := genUser()
+	ctx := context.Background()
+	id, err := dbClient.AddUser(ctx, testUser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testUser.Id = id
+	deal := genDeal()
+	deal.Country = testUser.SubscribedCountries[0]
+	deal.DiscountPercentage = float64(testUser.Threshold) + 1
+	_, err = dbClient.SaveDeals(ctx, testUser.Id, []schema.Deal{deal})
+	if err != nil {
+		t.Fatal(err)
+	}
+	emailId := gofakeit.UUID()
+	err = dbClient.AddSentEmail(ctx, id, deal.FlightLink, emailId)
+	if err != nil {
+		t.Fatal(err)
+	}
+	query := `SELECT COUNT(*) AS TOTAL FROM EMAIL_TRACKING WHERE EMAIL_ID=$1`
+	rows, err := pool.Query(ctx, query, emailId)
+	if err != nil {
+		t.Fatal(err)
+	}
+	total, err := pgx.CollectOneRow(rows, pgx.RowToAddrOf[int])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if *total != 1 {
+		t.Fatalf("should have found one result, but got %d", *total)
+	}
+}
