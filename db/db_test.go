@@ -345,7 +345,7 @@ func TestDatabaseClient_AddSentEmail(t *testing.T) {
 		t.Fatal(err)
 	}
 	emailId := gofakeit.UUID()
-	err = dbClient.AddSentEmail(ctx, id, deal.FlightLink, emailId)
+	err = dbClient.AddSentEmail(ctx, id, emailId, []schema.Deal{deal})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -388,7 +388,7 @@ func TestDatabaseClient_GetUnsentEmails(t *testing.T) {
 		t.Fatal(err)
 	}
 	emailId := gofakeit.UUID()
-	err = dbClient.AddSentEmail(ctx, id, deal.FlightLink, emailId)
+	err = dbClient.AddSentEmail(ctx, id, emailId, []schema.Deal{deal})
 	if err != nil {
 		t.Fatal(err)
 	}

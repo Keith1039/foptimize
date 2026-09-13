@@ -223,13 +223,27 @@ func (client DatabaseClient) GetDeal(ctx context.Context, flightLink string) (sc
 	return deal, nil
 }
 
-func (client DatabaseClient) AddSentEmail(ctx context.Context, id int, flightLink string, emailId string) error {
-	mappingArgs := pgx.NamedArgs{
-		"EMAIL_ID":    emailId,
-		"USER_ID":     id,
-		"FLIGHT_LINK": flightLink,
+func (client DatabaseClient) AddSentEmail(ctx context.Context, id int, emailId string, deals []schema.Deal) error {
+	tx, err := client.db.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return err
 	}
-	_, err := client.db.Exec(ctx, addEmailTrackingQuery, mappingArgs)
+	for _, deal := range deals {
+		mappingArgs := pgx.NamedArgs{
+			"EMAIL_ID":    emailId,
+			"USER_ID":     id,
+			"FLIGHT_LINK": deal.FlightLink,
+		}
+		_, err = tx.Exec(ctx, addEmailTrackingQuery, mappingArgs)
+		if err != nil {
+			rollBackErr := tx.Rollback(ctx)
+			if rollBackErr != nil {
+				fmt.Printf("Rollback Error occured: %v", rollBackErr)
+			}
+			return err
+		}
+	}
+	err = tx.Commit(ctx)
 	if err != nil {
 		return err
 	}
