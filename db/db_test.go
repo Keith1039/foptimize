@@ -229,6 +229,13 @@ func TestDatabaseClient_SaveDeals(t *testing.T) {
 	if len(metThreshold) != 0 {
 		t.Fatalf("existing deals should not be returned, but got %d", len(metThreshold))
 	}
+
+	invalidDeal := genDeal()
+	invalidDeal.StartDate = ""
+	metThreshold, err = dbClient.SaveDeals(ctx, testUser.Id, []schema.Deal{invalidDeal})
+	if err == nil {
+		t.Fatal("invalid deal should have been rejected")
+	}
 }
 
 func TestDatabaseClient_DeleteUser(t *testing.T) {

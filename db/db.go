@@ -145,6 +145,11 @@ func (client DatabaseClient) SaveDeals(ctx context.Context, id int, deals []sche
 		return []schema.Deal{}, err
 	}
 	for _, deal := range deals {
+		// validate deal
+		err = deal.Validate()
+		if err != nil {
+			return []schema.Deal{}, fmt.Errorf("deal with link '%s' failed validation with error %w", deal.FlightLink, err)
+		}
 		// skip deals that already exist for the user
 		if client.dealExistsForUser(ctx, id, deal.FlightLink) {
 			continue
