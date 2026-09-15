@@ -125,7 +125,6 @@ func (client DatabaseClient) dealExistsForUser(ctx context.Context, id int, deal
 		"USER_ID":                id,
 		"NAME":                   deal.Name,
 		"COUNTRY":                deal.Country,
-		"PRICE":                  deal.Price,
 		"START_DATE":             deal.StartDate,
 		"END_DATE":               deal.EndDate,
 		"DEPARTURE_AIRPORT_CODE": deal.DepartureAirportCode,

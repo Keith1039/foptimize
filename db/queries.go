@@ -48,7 +48,6 @@ const getDealForUserQuery = `SELECT
 							    USER_ID=@USER_ID AND
 							    NAME=@NAME AND
 							    COUNTRY=@COUNTRY AND
-							    PRICE=@PRICE AND
 							    START_DATE=@START_DATE AND
 							    END_DATE=@END_DATE AND
 							    DEPARTURE_AIRPORT_CODE=@DEPARTURE_AIRPORT_CODE AND
