@@ -7,7 +7,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"log"
-	"slices"
 )
 
 type DatabaseClient struct {
@@ -139,6 +138,14 @@ func (client DatabaseClient) dealExistsForUser(ctx context.Context, id int, deal
 	return rows.Next()
 }
 
+func arrToMap(countries []string) map[string]bool {
+	m := make(map[string]bool)
+	for _, country := range countries {
+		m[country] = true
+	}
+	return m
+}
+
 func (client DatabaseClient) SaveDeals(ctx context.Context, id int, deals []schema.Deal) ([]schema.Deal, error) {
 	var rollBackErr error
 	var metThreshold []schema.Deal
@@ -150,18 +157,20 @@ func (client DatabaseClient) SaveDeals(ctx context.Context, id int, deals []sche
 	if err != nil {
 		return []schema.Deal{}, err
 	}
+	countryMap := arrToMap(user.SubscribedCountries)
 	for _, deal := range deals {
 		// validate deal
 		err = deal.Validate()
 		if err != nil {
 			return []schema.Deal{}, fmt.Errorf("deal with link '%s' failed validation with error %w", deal.FlightLink, err)
 		}
-		// skip deals that already exist for the user
-		if client.dealExistsForUser(ctx, id, deal) {
-			continue
-		}
+
 		// check if it's a subscribed country... maybe this should be a map for quick access?
-		if slices.Contains(user.SubscribedCountries, deal.Country) {
+		if _, ok := countryMap[deal.Country]; ok {
+			// skip deals that already exist for the user
+			if client.dealExistsForUser(ctx, id, deal) {
+				continue
+			}
 			// add the deal
 			args := getDealArgs(deal)
 			_, err = tx.Exec(ctx, addDealQuery, args)
