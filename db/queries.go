@@ -41,11 +41,14 @@ const getDealQuery = `SELECT
 						`
 const getDealForUserQuery = `SELECT 
     								USER_ID 
-							FROM DEAL_MAPPING 
+							FROM (
+							    SELECT *
+							    FROM DEAL_MAPPING
+							    WHERE USER_ID=@USER_ID
+							) AS A
 							INNER JOIN DEALS
-							ON DEAL_MAPPING.FLIGHT_LINK=DEALS.FLIGHT_LINK
+							ON A.FLIGHT_LINK=DEALS.FLIGHT_LINK
 							WHERE 
-							    USER_ID=@USER_ID AND
 							    NAME=@NAME AND
 							    COUNTRY=@COUNTRY AND
 							    START_DATE=@START_DATE AND
@@ -54,6 +57,7 @@ const getDealForUserQuery = `SELECT
 							    ARRIVAL_AIRPORT_CODE=@ARRIVAL_AIRPORT_CODE AND
 							    FLIGHT_DURATION=@FLIGHT_DURATION AND
 							    STOPS=@STOPS
+							LIMIT 1
     						`
 const addDealQuery = `INSERT INTO DEALS(
 							DESTINATION_ID,
