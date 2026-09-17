@@ -135,6 +135,7 @@ func (client DatabaseClient) dealExistsForUser(ctx context.Context, id int, deal
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer rows.Close()
 	return rows.Next()
 }
 
