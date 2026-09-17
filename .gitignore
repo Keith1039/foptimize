@@ -1,3 +1,4 @@
 .env
 coverage.sh
 runtests.sh
+release.sh
