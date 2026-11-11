@@ -116,7 +116,7 @@ func TestDatabaseClient_AddUser(t *testing.T) {
 	}
 	testUser.Id = id
 	// grab latest user
-	query := `SELECT ID, EMAIL, RELEVANT_AIRPORTS, SUBSCRIBED_COUNTRIES, CONFIG, THRESHOLD, CREATED_AT FROM USERS WHERE ID=$1`
+	query := `SELECT ID, EMAIL, RELEVANT_AIRPORTS, SUBSCRIBED_COUNTRIES, CONFIG, EMAIL_CONFIG, THRESHOLD, CREATED_AT FROM USERS WHERE ID=$1`
 	rows, err := pool.Query(ctx, query, id)
 	if err != nil {
 		t.Fatal(err)
@@ -223,6 +223,10 @@ func TestDatabaseClient_SaveDeals(t *testing.T) {
 	if len(metThreshold) != 1 {
 		t.Fatalf("expected %d, received %d deals that met threshold", 1, len(metThreshold))
 	}
+
+	if !metThreshold[0].HasValidId() {
+		t.Fatal("deal returned by 'SaveDeals' returned without an Id")
+	}
 	query := `SELECT COUNT(*) as total FROM DEAL_MAPPING WHERE USER_ID=$1`
 	rows, err := pool.Query(ctx, query, testUser.Id)
 	if err != nil {
@@ -252,6 +256,42 @@ func TestDatabaseClient_SaveDeals(t *testing.T) {
 	if err == nil {
 		t.Fatal("invalid deal should have been rejected")
 	}
+}
+
+func TestDatabaseClient_SaveDeals_Update(t *testing.T) {
+	testUser := genUser()
+	ctx := context.Background()
+	id, err := dbClient.AddUser(ctx, testUser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testUser.Id = id
+	deal := genDeal()
+	deal.Country = testUser.SubscribedCountries[0]
+	deal.DiscountPercentage = float64(testUser.Threshold + 1)
+	metThreshold, err := dbClient.SaveDeals(ctx, testUser.Id, []schema.Deal{deal})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dealId := metThreshold[0].Id
+	// change the finances
+	deal.Price = gofakeit.Float64Range(0, 9000)
+	deal.DiscountPercentage = gofakeit.Float64Range(0, 100)
+	deal.AveragePrice = gofakeit.Float64Range(0, 100)
+
+	_, err = dbClient.SaveDeals(ctx, testUser.Id, []schema.Deal{deal})
+	if err != nil {
+		t.Fatal(err)
+	}
+	retrievedDeal, err := dbClient.GetDeal(ctx, dealId)
+	if err != nil {
+		t.Fatal(err)
+	}
+	deal.Id = retrievedDeal.Id
+	if !reflect.DeepEqual(deal, retrievedDeal) {
+		t.Fatal("deal was not updated when running 'SaveDeals'")
+	}
+
 }
 
 func TestDatabaseClient_DeleteUser(t *testing.T) {
@@ -302,6 +342,36 @@ func TestDatabaseClient_GetUserDeals(t *testing.T) {
 	}
 }
 
+func TestDatabaseClient_RemoveDealAssociation(t *testing.T) {
+	testUser := genUser()
+	ctx := context.Background()
+	id, err := dbClient.AddUser(ctx, testUser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testUser.Id = id
+	deal := genDeal()
+	deal.Country = testUser.SubscribedCountries[0]
+	deal.DiscountPercentage = float64(testUser.Threshold + 1)
+	metThreshold, err := dbClient.SaveDeals(ctx, testUser.Id, []schema.Deal{deal})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dealId := metThreshold[0].Id
+	err = dbClient.RemoveDealAssociation(ctx, testUser.Id, dealId)
+	if err != nil {
+		t.Fatal(err)
+	}
+	deals, err := dbClient.GetUserDeals(ctx, testUser.Id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(deals) != 0 {
+		t.Fatalf("deals should have been removed. length of deals: %d", len(deals))
+	}
+
+}
+
 func TestDatabaseClient_GetDeal(t *testing.T) {
 	// generate user
 	testUser := genUser()
@@ -314,14 +384,15 @@ func TestDatabaseClient_GetDeal(t *testing.T) {
 	deal := genDeal()
 	deal.Country = testUser.SubscribedCountries[0]
 	deal.DiscountPercentage = float64(testUser.Threshold) + 1
-	_, err = dbClient.SaveDeals(ctx, testUser.Id, []schema.Deal{deal})
+	returnedDeals, err := dbClient.SaveDeals(ctx, testUser.Id, []schema.Deal{deal})
 	if err != nil {
 		t.Fatal(err)
 	}
-	retrievedDeal, err := dbClient.GetDeal(ctx, deal.FlightLink)
+	retrievedDeal, err := dbClient.GetDeal(ctx, returnedDeals[0].Id)
 	if err != nil {
 		t.Fatal(err)
 	}
+	deal.Id = retrievedDeal.Id
 	if !reflect.DeepEqual(deal, retrievedDeal) {
 		t.Fatalf("deal '%+v' is not equal to retrieved deal '%+v'", deal, retrievedDeal)
 	}
@@ -340,12 +411,12 @@ func TestDatabaseClient_AddSentEmail(t *testing.T) {
 	deal := genDeal()
 	deal.Country = testUser.SubscribedCountries[0]
 	deal.DiscountPercentage = float64(testUser.Threshold) + 1
-	_, err = dbClient.SaveDeals(ctx, testUser.Id, []schema.Deal{deal})
+	returnedDeals, err := dbClient.SaveDeals(ctx, testUser.Id, []schema.Deal{deal})
 	if err != nil {
 		t.Fatal(err)
 	}
 	emailId := gofakeit.UUID()
-	err = dbClient.AddSentEmail(ctx, id, emailId, []schema.Deal{deal})
+	err = dbClient.AddSentEmail(ctx, id, emailId, returnedDeals)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -383,12 +454,13 @@ func TestDatabaseClient_GetUnsentEmails(t *testing.T) {
 	deal2.Country = testUser.SubscribedCountries[0]
 	// we have to deal with old entries first
 	deleteAllDeals()
-	_, err = dbClient.SaveDeals(ctx, testUser.Id, []schema.Deal{deal, deal2})
+	thresholdDeals, err := dbClient.SaveDeals(ctx, testUser.Id, []schema.Deal{deal, deal2})
+	newDeal2 := thresholdDeals[1]
 	if err != nil {
 		t.Fatal(err)
 	}
 	emailId := gofakeit.UUID()
-	err = dbClient.AddSentEmail(ctx, id, emailId, []schema.Deal{deal})
+	err = dbClient.AddSentEmail(ctx, id, emailId, thresholdDeals[:1])
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -400,7 +472,7 @@ func TestDatabaseClient_GetUnsentEmails(t *testing.T) {
 		t.Fatalf("expected array of size 1, got %d", len(userDealLinks))
 	}
 	userDealLink := userDealLinks[0]
-	if userDealLink.UserId != id && userDealLink.FlightLink != deal2.FlightLink {
-		t.Fatalf("expected user id of '%d' and flight link '%s' but received user id of '%d' and flight link of '%s'", id, deal2.FlightLink, userDealLink.UserId, userDealLink.FlightLink)
+	if userDealLink.UserId != id && userDealLink.DealId != newDeal2.Id {
+		t.Fatalf("expected user id of '%d' and deal id '%d' but received user id of '%d' and deal id of '%d'", id, newDeal2.Id, userDealLink.UserId, userDealLink.DealId)
 	}
 }
