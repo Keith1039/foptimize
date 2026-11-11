@@ -6,6 +6,7 @@ import (
 )
 
 type Deal struct {
+	Id                   int     `json:"id" db:"id"`
 	DestinationID        string  `json:"destination_id" db:"destination_id"`
 	Name                 string  `json:"name" db:"name"`
 	Country              string  `json:"country" db:"country"`
@@ -73,4 +74,8 @@ func (d Deal) Validate() error {
 		}
 	}
 	return nil
+}
+
+func (d Deal) HasValidId() bool {
+	return d.Id != 0
 }

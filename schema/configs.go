@@ -32,3 +32,8 @@ func (c Config) TransformParams() map[string]string {
 	}
 	return config
 }
+
+type EmailConfig struct {
+	Subscribed bool   `json:"subscribed"`
+	BatchType  string `json:"batch_type"`
+}
