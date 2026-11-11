@@ -299,7 +299,19 @@ func (client DatabaseClient) SaveDeals(ctx context.Context, id int, deals []sche
 }
 
 func (client DatabaseClient) GetUserDeals(ctx context.Context, id int) ([]schema.Deal, error) {
-	rows, err := client.db.Query(ctx, getDealsQuery, id)
+	rows, err := client.db.Query(ctx, getUserDealsQuery, id)
+	if err != nil {
+		return []schema.Deal{}, err
+	}
+	deals, err := pgx.CollectRows(rows, pgx.RowToStructByName[schema.Deal])
+	if err != nil {
+		return []schema.Deal{}, err
+	}
+	return deals, nil
+}
+
+func (client DatabaseClient) GetNonUserDeals(ctx context.Context, id int) ([]schema.Deal, error) {
+	rows, err := client.db.Query(ctx, getNonUserDealsQuery, id)
 	if err != nil {
 		return []schema.Deal{}, err
 	}

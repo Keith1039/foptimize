@@ -342,6 +342,37 @@ func TestDatabaseClient_GetUserDeals(t *testing.T) {
 	}
 }
 
+func TestDatabaseClient_GetNonUserDeals(t *testing.T) {
+	// generate user
+	testUser := genUser()
+	ctx := context.Background()
+	id, err := dbClient.AddUser(ctx, testUser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testUser.Id = id
+	dealAmount := 2
+	testDeals := make([]schema.Deal, 2)
+	for i := 0; i < dealAmount; i++ {
+		deal := genDeal()
+		deal.Country = testUser.SubscribedCountries[0]
+		testDeals[i] = deal
+	}
+	count := getCountForTable("DEALS")
+	//add 2 more associated with user
+	_, err = dbClient.SaveDeals(ctx, testUser.Id, testDeals)
+	if err != nil {
+		t.Fatal(err)
+	}
+	deals, err := dbClient.GetNonUserDeals(ctx, testUser.Id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(deals) != count {
+		t.Fatalf("expect %d deal. received %d deals", count, len(deals))
+	}
+}
+
 func TestDatabaseClient_RemoveDealAssociation(t *testing.T) {
 	testUser := genUser()
 	ctx := context.Background()

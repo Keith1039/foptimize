@@ -121,7 +121,7 @@ const mapUserAndDeal = `INSERT INTO DEAL_MAPPING(USER_ID, DEAL_ID) VALUES (@USER
 
 const removeUserAndDealAssociation = `DELETE FROM DEAL_MAPPING WHERE USER_ID=@USER_ID AND DEAL_ID=@DEAL_ID`
 
-const getDealsQuery = `SELECT
+const getUserDealsQuery = `SELECT
 							ID,
 							DESTINATION_ID,
 							NAME,
@@ -145,6 +145,32 @@ const getDealsQuery = `SELECT
 						FROM DEALS
 						INNER JOIN DEAL_MAPPING
 						ON DEALS.ID=DEAL_MAPPING.DEAL_ID AND USER_ID=$1
+						`
+
+const getNonUserDealsQuery = `SELECT
+							ID,
+							DESTINATION_ID,
+							NAME,
+							COUNTRY,
+							PRICE,
+							AVERAGE_PRICE,
+							DISCOUNT_PERCENTAGE,
+							DEALS.FLIGHT_LINK,
+							SERP_API_FLIGHT_LINK,
+							THUMBNAIL,
+							START_DATE,
+							END_DATE,
+							DEPARTURE_AIRPORT_CODE,
+							ARRIVAL_AIRPORT_CODE,
+							FLIGHT_DURATION,
+							STOPS,
+							AIRLINE,
+							AIRLINE_CODE,
+							DESCRIPTION,
+							HIGHLIGHTS
+						FROM DEALS
+						INNER JOIN DEAL_MAPPING
+						ON DEALS.ID=DEAL_MAPPING.DEAL_ID AND USER_ID <> $1
 						`
 
 // Email Tracking queries
