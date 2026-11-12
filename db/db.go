@@ -310,8 +310,13 @@ func (client DatabaseClient) GetUserDeals(ctx context.Context, id int) ([]schema
 	return deals, nil
 }
 
-func (client DatabaseClient) GetNonUserDeals(ctx context.Context, id int) ([]schema.Deal, error) {
-	rows, err := client.db.Query(ctx, getNonUserDealsQuery, id)
+func (client DatabaseClient) GetNonUserDeals(ctx context.Context, id, limit, offset int) ([]schema.Deal, error) {
+	args := pgx.NamedArgs{
+		"ID":     id,
+		"LIMIT":  limit,
+		"OFFSET": offset,
+	}
+	rows, err := client.db.Query(ctx, getNonUserDealsQuery, args)
 	if err != nil {
 		return []schema.Deal{}, err
 	}

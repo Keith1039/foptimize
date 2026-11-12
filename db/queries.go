@@ -38,7 +38,8 @@ const getDealQuery = `SELECT
 							AIRLINE,
 							AIRLINE_CODE,
 							DESCRIPTION,
-							HIGHLIGHTS
+							HIGHLIGHTS,
+							CREATED_AT
 						FROM DEALS
 						WHERE ID=$1
 						`
@@ -71,6 +72,7 @@ const getDealForUserQuery = `SELECT
 							    STOPS=@STOPS
 							LIMIT 1
     						`
+
 const addDealQuery = `INSERT INTO DEALS(
 							DESTINATION_ID,
 							NAME,
@@ -141,10 +143,12 @@ const getUserDealsQuery = `SELECT
 							AIRLINE,
 							AIRLINE_CODE,
 							DESCRIPTION,
-							HIGHLIGHTS
+							HIGHLIGHTS,
+							DEALS.CREATED_AT
 						FROM DEALS
 						INNER JOIN DEAL_MAPPING
 						ON DEALS.ID=DEAL_MAPPING.DEAL_ID AND USER_ID=$1
+						ORDER BY DEALS.ID DESC
 						`
 
 const getNonUserDealsQuery = `SELECT
@@ -167,10 +171,14 @@ const getNonUserDealsQuery = `SELECT
 							AIRLINE,
 							AIRLINE_CODE,
 							DESCRIPTION,
-							HIGHLIGHTS
+							HIGHLIGHTS,
+							DEALS.CREATED_AT
 						FROM DEALS
 						INNER JOIN DEAL_MAPPING
-						ON DEALS.ID=DEAL_MAPPING.DEAL_ID AND USER_ID <> $1
+						ON DEALS.ID=DEAL_MAPPING.DEAL_ID AND USER_ID <> @ID
+						ORDER BY DEALS.ID DESC
+						LIMIT @LIMIT
+						OFFSET @OFFSET
 						`
 
 // Email Tracking queries

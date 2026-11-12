@@ -55,7 +55,7 @@ func genDeal() schema.Deal {
 		EndDate:              afterDate.String(),
 		DepartureAirportCode: gofakeit.AirlineAirportIATA(),
 		ArrivalAirportCode:   gofakeit.AirlineAirportIATA(),
-		FlightDuration:       gofakeit.Number(0, 2000),
+		FlightDuration:       gofakeit.Number(1, 2000),
 		Stops:                gofakeit.Number(0, 10),
 		Airline:              gofakeit.AirlineAirport(),
 		AirlineCode:          "",
@@ -288,6 +288,7 @@ func TestDatabaseClient_SaveDeals_Update(t *testing.T) {
 		t.Fatal(err)
 	}
 	deal.Id = retrievedDeal.Id
+	deal.CreatedAt = retrievedDeal.CreatedAt
 	if !reflect.DeepEqual(deal, retrievedDeal) {
 		t.Fatal("deal was not updated when running 'SaveDeals'")
 	}
@@ -364,13 +365,83 @@ func TestDatabaseClient_GetNonUserDeals(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	deals, err := dbClient.GetNonUserDeals(ctx, testUser.Id)
+	deals, err := dbClient.GetNonUserDeals(ctx, testUser.Id, 100, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(deals) != count {
 		t.Fatalf("expect %d deal. received %d deals", count, len(deals))
 	}
+}
+
+func TestDatabaseClient_GetNonUserDeals_Limit_Offset(t *testing.T) {
+	amount := 10
+	// generate user
+	testUser := genUser()
+	otherUser := genUser()
+	ctx := context.Background()
+	id, err := dbClient.AddUser(ctx, testUser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testUser.Id = id
+
+	id, err = dbClient.AddUser(ctx, otherUser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	otherUser.Id = id
+	testDeals := make([]schema.Deal, amount)
+	for i := 0; i < amount; i++ {
+		deal := genDeal()
+		deal.Country = testUser.SubscribedCountries[0]
+		deal.DiscountPercentage = float64(testUser.Threshold + 1)
+		testDeals[i] = deal
+	}
+	count := getCountForTable("DEALS")
+	//add 2 more associated with user
+	_, err = dbClient.SaveDeals(ctx, testUser.Id, testDeals)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testUserDeals, err := dbClient.GetUserDeals(ctx, testUser.Id)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	deals, err := dbClient.GetNonUserDeals(ctx, otherUser.Id, 5, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(deals) != 5 {
+		t.Fatalf("expect %d deal. received %d deals", count, len(deals))
+	}
+	// check if they're the same 5 we created
+	for i, deal := range deals {
+		if !reflect.DeepEqual(testUserDeals[i], deal) {
+			t.Logf("test user deal was created at %s while returned deal was created at %s", testUserDeals[i].CreatedAt.String(), deal.CreatedAt.String())
+			t.Log(testUserDeals[i])
+			t.Log(deal)
+			t.Fatalf("deal at index '%d' was not the same deal returned by function", i)
+		}
+	}
+
+	deals, err = dbClient.GetNonUserDeals(ctx, otherUser.Id, 5, 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(deals) != 5 {
+		t.Fatalf("expect %d deal. received %d deals", count, len(deals))
+	}
+
+	// check if they're the same 5 we created
+	for i, deal := range deals {
+		if !reflect.DeepEqual(testUserDeals[len(deals)+i], deal) {
+			t.Fatalf("deal at index '%d' was not the same deal from original index '%d' returned by function", i, len(testDeals)-i-1)
+		}
+	}
+
 }
 
 func TestDatabaseClient_RemoveDealAssociation(t *testing.T) {
@@ -424,6 +495,7 @@ func TestDatabaseClient_GetDeal(t *testing.T) {
 		t.Fatal(err)
 	}
 	deal.Id = retrievedDeal.Id
+	deal.CreatedAt = retrievedDeal.CreatedAt
 	if !reflect.DeepEqual(deal, retrievedDeal) {
 		t.Fatalf("deal '%+v' is not equal to retrieved deal '%+v'", deal, retrievedDeal)
 	}
@@ -456,12 +528,12 @@ func TestDatabaseClient_AddSentEmail(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	total, err := pgx.CollectOneRow(rows, pgx.RowToAddrOf[int])
+	total, err := pgx.CollectOneRow(rows, pgx.RowTo[int])
 	if err != nil {
 		t.Fatal(err)
 	}
-	if *total != 1 {
-		t.Fatalf("should have found one result, but got %d", *total)
+	if total != 1 {
+		t.Fatalf("should have found one result, but got %d", total)
 	}
 }
 
