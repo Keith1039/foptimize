@@ -327,6 +327,24 @@ func (client DatabaseClient) GetNonUserDeals(ctx context.Context, id, limit, off
 	return deals, nil
 }
 
+func (client DatabaseClient) GetNonUserDealsForCountry(ctx context.Context, id, limit, offset int, country string) ([]schema.Deal, error) {
+	args := pgx.NamedArgs{
+		"ID":      id,
+		"LIMIT":   limit,
+		"OFFSET":  offset,
+		"COUNTRY": country,
+	}
+	rows, err := client.db.Query(ctx, getNonUserDealsQuery, args)
+	if err != nil {
+		return []schema.Deal{}, err
+	}
+	deals, err := pgx.CollectRows(rows, pgx.RowToStructByName[schema.Deal])
+	if err != nil {
+		return []schema.Deal{}, err
+	}
+	return deals, nil
+}
+
 func (client DatabaseClient) GetDeal(ctx context.Context, dealId int) (schema.Deal, error) {
 	rows, err := client.db.Query(ctx, getDealQuery, dealId)
 	if err != nil {

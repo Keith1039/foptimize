@@ -181,6 +181,36 @@ const getNonUserDealsQuery = `SELECT
 						OFFSET @OFFSET
 						`
 
+const getNonUserDealsCountryQuery = `SELECT
+							ID,
+							DESTINATION_ID,
+							NAME,
+							COUNTRY,
+							PRICE,
+							AVERAGE_PRICE,
+							DISCOUNT_PERCENTAGE,
+							DEALS.FLIGHT_LINK,
+							SERP_API_FLIGHT_LINK,
+							THUMBNAIL,
+							START_DATE,
+							END_DATE,
+							DEPARTURE_AIRPORT_CODE,
+							ARRIVAL_AIRPORT_CODE,
+							FLIGHT_DURATION,
+							STOPS,
+							AIRLINE,
+							AIRLINE_CODE,
+							DESCRIPTION,
+							HIGHLIGHTS,
+							DEALS.CREATED_AT
+						FROM DEALS
+						INNER JOIN DEAL_MAPPING
+						ON DEALS.ID=DEAL_MAPPING.DEAL_ID AND USER_ID <> @ID AND COUNTRY=@COUNTRY
+						ORDER BY DEALS.ID DESC
+						LIMIT @LIMIT
+						OFFSET @OFFSET
+						`
+
 // Email Tracking queries
 const addEmailTrackingQuery = `INSERT INTO EMAIL_TRACKING(EMAIL_ID, USER_ID, DEAL_ID) VALUES (@EMAIL_ID, @USER_ID, @DEAL_ID)`
 

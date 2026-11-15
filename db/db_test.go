@@ -421,8 +421,6 @@ func TestDatabaseClient_GetNonUserDeals_Limit_Offset(t *testing.T) {
 	for i, deal := range deals {
 		if !reflect.DeepEqual(testUserDeals[i], deal) {
 			t.Logf("test user deal was created at %s while returned deal was created at %s", testUserDeals[i].CreatedAt.String(), deal.CreatedAt.String())
-			t.Log(testUserDeals[i])
-			t.Log(deal)
 			t.Fatalf("deal at index '%d' was not the same deal returned by function", i)
 		}
 	}
@@ -439,6 +437,81 @@ func TestDatabaseClient_GetNonUserDeals_Limit_Offset(t *testing.T) {
 	for i, deal := range deals {
 		if !reflect.DeepEqual(testUserDeals[len(deals)+i], deal) {
 			t.Fatalf("deal at index '%d' was not the same deal from original index '%d' returned by function", i, len(testDeals)-i-1)
+		}
+	}
+
+}
+
+func TestDatabaseClient_GetNonUserDeals_Country_Limit_Offset(t *testing.T) {
+	amount := 10
+	// generate user
+	testUser := genUser()
+	otherUser := genUser()
+	ctx := context.Background()
+	id, err := dbClient.AddUser(ctx, testUser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testUser.Id = id
+
+	id, err = dbClient.AddUser(ctx, otherUser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	otherUser.Id = id
+	testDeals := make([]schema.Deal, amount)
+	for i := 0; i < amount; i++ {
+		deal := genDeal()
+		deal.Country = testUser.SubscribedCountries[0]
+		deal.DiscountPercentage = float64(testUser.Threshold + 1)
+		testDeals[i] = deal
+	}
+	count := getCountForTable("DEALS")
+	//add 2 more associated with user
+	_, err = dbClient.SaveDeals(ctx, testUser.Id, testDeals)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testUserDeals, err := dbClient.GetUserDeals(ctx, testUser.Id)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	deals, err := dbClient.GetNonUserDealsForCountry(ctx, otherUser.Id, 5, 0, testUser.SubscribedCountries[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(deals) != 5 {
+		t.Fatalf("expect %d deal. received %d deals", count, len(deals))
+	}
+	// check if they're the same 5 we created
+	for i, deal := range deals {
+		if !reflect.DeepEqual(testUserDeals[i], deal) {
+			t.Logf("test user deal was created at %s while returned deal was created at %s", testUserDeals[i].CreatedAt.String(), deal.CreatedAt.String())
+			t.Fatalf("deal at index '%d' was not the same deal returned by function", i)
+		}
+		if testUserDeals[i].Country != testUser.SubscribedCountries[0] {
+			t.Logf("deal country %s does not match the desired country of %s", testUserDeals[i].Country, testUser.SubscribedCountries[0])
+		}
+	}
+
+	deals, err = dbClient.GetNonUserDeals(ctx, otherUser.Id, 5, 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(deals) != 5 {
+		t.Fatalf("expect %d deal. received %d deals", count, len(deals))
+	}
+
+	// check if they're the same 5 we created
+	for i, deal := range deals {
+		testUserDeal := testUserDeals[len(deals)+i]
+		if !reflect.DeepEqual(testUserDeal, deal) {
+			t.Fatalf("deal at index '%d' was not the same deal from original index '%d' returned by function", i, len(testDeals)-i-1)
+		}
+		if testUserDeal.Country != testUser.SubscribedCountries[0] {
+			t.Logf("deal country %s does not match the desired country of %s", testUserDeal.Country, testUser.SubscribedCountries[0])
 		}
 	}
 
