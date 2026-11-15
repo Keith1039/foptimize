@@ -334,7 +334,7 @@ func (client DatabaseClient) GetNonUserDealsForCountry(ctx context.Context, id, 
 		"OFFSET":  offset,
 		"COUNTRY": country,
 	}
-	rows, err := client.db.Query(ctx, getNonUserDealsQuery, args)
+	rows, err := client.db.Query(ctx, getNonUserDealsCountryQuery, args)
 	if err != nil {
 		return []schema.Deal{}, err
 	}
