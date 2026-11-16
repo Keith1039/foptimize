@@ -11,6 +11,7 @@ type User struct {
 	EmailConfig         EmailConfig `json:"email_config" db:"email_config"`
 	Threshold           int         `json:"threshold" db:"threshold"`
 	CreatedAt           time.Time   `json:"created_at" db:"created_at"`
+	UpdatedAt           time.Time   `json:"updated_at" db:"updated_at"`
 }
 
 type Users struct {

@@ -28,6 +28,7 @@ type Deal struct {
 	Description          string    `json:"description" db:"description"`
 	Highlights           string    `json:"highlights" db:"highlights"`
 	CreatedAt            time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt            time.Time `json:"updated_at" db:"updated_at"`
 }
 
 type Deals struct {

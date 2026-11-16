@@ -6,9 +6,16 @@ import (
 	"fmt"
 	"github.com/Keith1039/foptimize/schema"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"log"
+	"time"
 )
+
+type Queryable interface {
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+}
 
 type DatabaseClient struct {
 	db *pgxpool.Pool
@@ -27,6 +34,10 @@ func NewDatabaseClientWithPool(pool *pgxpool.Pool) (DatabaseClient, error) {
 }
 
 // User section
+
+func (client DatabaseClient) GetConn() *pgxpool.Pool {
+	return client.db
+}
 
 func (client DatabaseClient) AddUser(ctx context.Context, user schema.User) (int, error) {
 	args := pgx.NamedArgs{
@@ -57,6 +68,7 @@ func (client DatabaseClient) UpdateUser(ctx context.Context, user schema.User) e
 		"CONFIG":               user.Config,
 		"EMAIL_CONFIG":         user.EmailConfig,
 		"THRESHOLD":            user.Threshold,
+		"UPDATED_AT":           time.Now(),
 	}
 	_, err := client.db.Exec(ctx, updateUserQuery, args)
 	return err
@@ -122,6 +134,7 @@ func getAddDealArgs(deal schema.Deal) pgx.NamedArgs {
 	}
 }
 
+// deal is already associated and ACTIVE = TRUE
 func (client DatabaseClient) dealExistsForUser(ctx context.Context, id int, deal schema.Deal) int {
 	args := pgx.NamedArgs{
 		"USER_ID":                id,
@@ -138,6 +151,30 @@ func (client DatabaseClient) dealExistsForUser(ctx context.Context, id int, deal
 	if err != nil {
 		log.Fatal(err)
 	}
+	dealId, err := pgx.CollectOneRow(rows, pgx.RowTo[int])
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return 0 // default value
+		} else {
+			log.Fatal(err)
+		}
+	}
+	return dealId
+}
+
+func (client DatabaseClient) isInactiveAssociatedDeal(ctx context.Context, id int, deal schema.Deal) int {
+	args := pgx.NamedArgs{
+		"USER_ID":                id,
+		"NAME":                   deal.Name,
+		"COUNTRY":                deal.Country,
+		"START_DATE":             deal.StartDate,
+		"END_DATE":               deal.EndDate,
+		"DEPARTURE_AIRPORT_CODE": deal.DepartureAirportCode,
+		"ARRIVAL_AIRPORT_CODE":   deal.ArrivalAirportCode,
+		"FLIGHT_DURATION":        deal.FlightDuration,
+		"STOPS":                  deal.Stops,
+	}
+	rows, err := client.db.Query(ctx, isInactiveDealQuery, args)
 	dealId, err := pgx.CollectOneRow(rows, pgx.RowTo[int])
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -179,6 +216,7 @@ func (client DatabaseClient) updateDeal(ctx context.Context, tx pgx.Tx, dealId i
 		"PRICE":               deal.Price,
 		"AVERAGE_PRICE":       deal.AveragePrice,
 		"DISCOUNT_PERCENTAGE": deal.DiscountPercentage,
+		"UPDATED_AT":          time.Now(),
 	}
 	_, err := tx.Exec(ctx, updateDealPriceQuery, args)
 	if err != nil {
@@ -187,41 +225,49 @@ func (client DatabaseClient) updateDeal(ctx context.Context, tx pgx.Tx, dealId i
 	return nil
 }
 
-func (client DatabaseClient) mapUserAndDealNoTx(ctx context.Context, userId, dealId int) error {
-	mappingArgs := pgx.NamedArgs{
-		"USER_ID": userId,
-		"DEAL_ID": dealId,
+func (client DatabaseClient) reactivateDeal(ctx context.Context, db Queryable, userId, dealId int) error {
+	args := pgx.NamedArgs{
+		"USER_ID":    userId,
+		"DEAL_ID":    dealId,
+		"UPDATED_AT": time.Now(),
 	}
-	_, err := client.db.Exec(ctx, mapUserAndDeal, mappingArgs)
+	_, err := db.Exec(ctx, reactivateUserDealAssociation, args)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (client DatabaseClient) mapUserAndDealWithTx(ctx context.Context, tx pgx.Tx, userId int, dealId int) error {
-	mappingArgs := pgx.NamedArgs{
+func (client DatabaseClient) mapNewDealToUser(ctx context.Context, db Queryable, userId, dealId int) error {
+	args := pgx.NamedArgs{
 		"USER_ID": userId,
 		"DEAL_ID": dealId,
 	}
-	_, err := tx.Exec(ctx, mapUserAndDeal, mappingArgs)
+	_, err := db.Exec(ctx, mapUserAndDeal, args)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (client DatabaseClient) MapUserAndDeal(ctx context.Context, tx pgx.Tx, userId, dealId int) error {
-	if tx != nil {
-		return client.mapUserAndDealWithTx(ctx, tx, userId, dealId)
+func (client DatabaseClient) MapUserAndDeal(ctx context.Context, db Queryable, userId, dealId int) error {
+	deal, err := client.GetDealWithQueryable(ctx, db, dealId)
+	if err != nil {
+		return err
 	}
-	return client.mapUserAndDealNoTx(ctx, userId, dealId)
+
+	isInactiveDeal := client.isInactiveAssociatedDeal(ctx, userId, deal) != 0
+	if isInactiveDeal {
+		return client.reactivateDeal(ctx, db, userId, dealId)
+	}
+	return client.mapNewDealToUser(ctx, db, userId, dealId)
 }
 
 func (client DatabaseClient) RemoveDealAssociation(ctx context.Context, userId, dealId int) error {
 	args := pgx.NamedArgs{
-		"USER_ID": userId,
-		"DEAL_ID": dealId,
+		"USER_ID":    userId,
+		"DEAL_ID":    dealId,
+		"UPDATED_AT": time.Now(),
 	}
 	_, err := client.db.Exec(ctx, removeUserAndDealAssociation, args)
 	if err != nil {
@@ -274,7 +320,7 @@ func (client DatabaseClient) SaveDeals(ctx context.Context, id int, deals []sche
 			fmt.Printf("Rollback Error occured: %v", rollBackErr)
 			return []schema.Deal{}, err
 		}
-		// map to user
+		// map to user (if the deal was already associated, set ACTIVE to true)
 		err = client.MapUserAndDeal(ctx, tx, id, dealId)
 		if err != nil {
 			// doesn't matter
@@ -282,6 +328,7 @@ func (client DatabaseClient) SaveDeals(ctx context.Context, id int, deals []sche
 			fmt.Printf("Rollback Error occured: %v", rollBackErr)
 			return []schema.Deal{}, err
 		}
+
 		// next we check if threshold is met, so we can return them
 		if deal.DiscountPercentage >= float64(user.Threshold) {
 			// set the id before adding to array
@@ -357,6 +404,17 @@ func (client DatabaseClient) GetDeal(ctx context.Context, dealId int) (schema.De
 	return deal, nil
 }
 
+func (client DatabaseClient) GetDealWithQueryable(ctx context.Context, db Queryable, dealId int) (schema.Deal, error) {
+	rows, err := db.Query(ctx, getDealQuery, dealId)
+	if err != nil {
+		return schema.Deal{}, err
+	}
+	deal, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[schema.Deal])
+	if err != nil {
+		return schema.Deal{}, err
+	}
+	return deal, nil
+}
 func (client DatabaseClient) AddSentEmail(ctx context.Context, id int, emailId string, deals []schema.Deal) error {
 	tx, err := client.db.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {

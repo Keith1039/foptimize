@@ -116,7 +116,7 @@ func TestDatabaseClient_AddUser(t *testing.T) {
 	}
 	testUser.Id = id
 	// grab latest user
-	query := `SELECT ID, EMAIL, RELEVANT_AIRPORTS, SUBSCRIBED_COUNTRIES, CONFIG, EMAIL_CONFIG, THRESHOLD, CREATED_AT FROM USERS WHERE ID=$1`
+	query := `SELECT ID, EMAIL, RELEVANT_AIRPORTS, SUBSCRIBED_COUNTRIES, CONFIG, EMAIL_CONFIG, THRESHOLD, CREATED_AT, UPDATED_AT FROM USERS WHERE ID=$1`
 	rows, err := pool.Query(ctx, query, id)
 	if err != nil {
 		t.Fatal(err)
@@ -127,6 +127,7 @@ func TestDatabaseClient_AddUser(t *testing.T) {
 	}
 	// account for any slight difference
 	testUser.CreatedAt = user.CreatedAt
+	testUser.UpdatedAt = user.UpdatedAt
 	if !reflect.DeepEqual(user, testUser) {
 		t.Fatalf("user: %+v is not equal to test user: %+v", user, testUser)
 	}
@@ -146,6 +147,7 @@ func TestDatabaseClient_GetUser(t *testing.T) {
 	}
 	// account for any slight difference
 	testUser.CreatedAt = user.CreatedAt
+	testUser.UpdatedAt = user.UpdatedAt
 	if !reflect.DeepEqual(user, testUser) {
 		t.Fatalf("user: %+v is not equal to test user: %+v", user, testUser)
 	}
@@ -194,8 +196,12 @@ func TestDatabaseClient_UpdateUser(t *testing.T) {
 	}
 	// account for any slight difference
 	testUser.CreatedAt = user.CreatedAt
+	if reflect.DeepEqual(user, testUser) {
+		t.Fatalf("user: %+v should not be equal to test user: %+v", user, testUser)
+	}
+	testUser.UpdatedAt = user.UpdatedAt
 	if !reflect.DeepEqual(user, testUser) {
-		t.Fatalf("user: %+v is not equal to test user: %+v", user, testUser)
+		t.Fatalf("user: %+v is not equal to test user even after updated field is changed: %+v", user, testUser)
 	}
 }
 
@@ -289,8 +295,12 @@ func TestDatabaseClient_SaveDeals_Update(t *testing.T) {
 	}
 	deal.Id = retrievedDeal.Id
 	deal.CreatedAt = retrievedDeal.CreatedAt
+	if reflect.DeepEqual(deal, retrievedDeal) {
+		t.Fatal("deal should not be equal since updated at field is changed 'SaveDeals'")
+	}
+	deal.UpdatedAt = retrievedDeal.UpdatedAt
 	if !reflect.DeepEqual(deal, retrievedDeal) {
-		t.Fatal("deal was not updated when running 'SaveDeals'")
+		t.Fatal("deal was not updated properly 'SaveDeals'")
 	}
 
 }
@@ -569,6 +579,7 @@ func TestDatabaseClient_GetDeal(t *testing.T) {
 	}
 	deal.Id = retrievedDeal.Id
 	deal.CreatedAt = retrievedDeal.CreatedAt
+	deal.UpdatedAt = retrievedDeal.UpdatedAt
 	if !reflect.DeepEqual(deal, retrievedDeal) {
 		t.Fatalf("deal '%+v' is not equal to retrieved deal '%+v'", deal, retrievedDeal)
 	}
