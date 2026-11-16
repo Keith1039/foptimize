@@ -557,6 +557,48 @@ func TestDatabaseClient_RemoveDealAssociation(t *testing.T) {
 
 }
 
+// TODO: Make a test case for transactions
+func TestDatabaseClient_reactivate_user_deal(t *testing.T) {
+	testUser := genUser()
+	ctx := context.Background()
+	id, err := dbClient.AddUser(ctx, testUser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testUser.Id = id
+	deal := genDeal()
+	deal.Country = testUser.SubscribedCountries[0]
+	deal.DiscountPercentage = float64(testUser.Threshold + 1)
+	metThreshold, err := dbClient.SaveDeals(ctx, testUser.Id, []schema.Deal{deal})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dealId := metThreshold[0].Id
+	err = dbClient.RemoveDealAssociation(ctx, testUser.Id, dealId)
+	if err != nil {
+		t.Fatal(err)
+	}
+	deals, err := dbClient.GetUserDeals(ctx, testUser.Id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(deals) != 0 {
+		t.Fatalf("deals should have been removed. length of deals: %d", len(deals))
+	}
+	err = dbClient.MapUserAndDeal(ctx, dbClient.GetConn(), testUser.Id, dealId)
+	if err != nil {
+		t.Fatal(err)
+	}
+	deals, err = dbClient.GetUserDeals(ctx, testUser.Id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(deals) != 1 {
+		t.Fatalf("deal with id %d failed to be reactiviated", dealId)
+	}
+
+}
+
 func TestDatabaseClient_GetDeal(t *testing.T) {
 	// generate user
 	testUser := genUser()
