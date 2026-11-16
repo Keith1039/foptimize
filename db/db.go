@@ -134,7 +134,7 @@ func getAddDealArgs(deal schema.Deal) pgx.NamedArgs {
 	}
 }
 
-// deal is already associated and ACTIVE = TRUE
+// check if deal is already associated with the user regardless of ACTIVE status
 func (client DatabaseClient) dealExistsForUser(ctx context.Context, id int, deal schema.Deal) int {
 	args := pgx.NamedArgs{
 		"USER_ID":                id,
