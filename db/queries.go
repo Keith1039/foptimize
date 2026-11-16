@@ -72,8 +72,7 @@ const getDealForUserQuery = `SELECT
 							    DEPARTURE_AIRPORT_CODE=@DEPARTURE_AIRPORT_CODE AND
 							    ARRIVAL_AIRPORT_CODE=@ARRIVAL_AIRPORT_CODE AND
 							    FLIGHT_DURATION=@FLIGHT_DURATION AND
-							    STOPS=@STOPS AND
-							    ACTIVE <> FALSE
+							    STOPS=@STOPS
 							LIMIT 1
     						`
 
