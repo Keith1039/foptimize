@@ -240,7 +240,7 @@ const getNonUserDealsQuery = `SELECT
 						    	SELECT 
 									DEAL_ID
 								FROM DEAL_MAPPING
-								WHERE USER_ID=@USER_ID
+								WHERE USER_ID=@USER_ID AND ACTIVE=TRUE
 							) AS A
 						    RIGHT JOIN DEAL_MAPPING AS B
 						    ON A.DEAL_ID=B.DEAL_ID 
