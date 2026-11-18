@@ -178,6 +178,37 @@ const getUserDealsQuery = `SELECT
 						ORDER BY DEALS.ID DESC
 						`
 
+//const getNonUserDealsQuery = `SELECT
+//							ID,
+//							DESTINATION_ID,
+//							NAME,
+//							COUNTRY,
+//							PRICE,
+//							AVERAGE_PRICE,
+//							DISCOUNT_PERCENTAGE,
+//							DEALS.FLIGHT_LINK,
+//							SERP_API_FLIGHT_LINK,
+//							THUMBNAIL,
+//							START_DATE,
+//							END_DATE,
+//							DEPARTURE_AIRPORT_CODE,
+//							ARRIVAL_AIRPORT_CODE,
+//							FLIGHT_DURATION,
+//							STOPS,
+//							AIRLINE,
+//							AIRLINE_CODE,
+//							DESCRIPTION,
+//							HIGHLIGHTS,
+//							DEALS.CREATED_AT,
+//							DEALS.UPDATED_AT
+//						FROM DEALS
+//						INNER JOIN DEAL_MAPPING
+//						ON DEALS.ID=DEAL_MAPPING.DEAL_ID AND USER_ID <> @ID
+//						ORDER BY DEALS.ID DESC
+//						LIMIT @LIMIT
+//						OFFSET @OFFSET
+//						`
+
 const getNonUserDealsQuery = `SELECT
 							ID,
 							DESTINATION_ID,
@@ -202,8 +233,20 @@ const getNonUserDealsQuery = `SELECT
 							DEALS.CREATED_AT,
 							DEALS.UPDATED_AT
 						FROM DEALS
-						INNER JOIN DEAL_MAPPING
-						ON DEALS.ID=DEAL_MAPPING.DEAL_ID AND USER_ID <> @ID
+						INNER JOIN (
+						    SELECT 
+						        B.DEAL_ID
+							FROM(
+						    	SELECT 
+									DEAL_ID
+								FROM DEAL_MAPPING
+								WHERE USER_ID=@USER_ID
+							) AS A
+						    RIGHT JOIN DEAL_MAPPING AS B
+						    ON A.DEAL_ID=B.DEAL_ID 
+						    WHERE A.DEAL_ID IS NULL
+						) AS TRIMMED_DEAL_MAPPING
+						ON DEALS.ID=TRIMMED_DEAL_MAPPING.DEAL_ID
 						ORDER BY DEALS.ID DESC
 						LIMIT @LIMIT
 						OFFSET @OFFSET
