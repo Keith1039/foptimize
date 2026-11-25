@@ -116,7 +116,7 @@ func TestDatabaseClient_AddUser(t *testing.T) {
 	}
 	testUser.Id = id
 	// grab latest user
-	query := `SELECT ID, EMAIL, RELEVANT_AIRPORTS, SUBSCRIBED_COUNTRIES, CONFIG, EMAIL_CONFIG, THRESHOLD, CREATED_AT, UPDATED_AT FROM USERS WHERE ID=$1`
+	query := `SELECT ID, EMAIL, ACTIVATED,RELEVANT_AIRPORTS, SUBSCRIBED_COUNTRIES, CONFIG, EMAIL_CONFIG, THRESHOLD, CREATED_AT, UPDATED_AT FROM USERS WHERE ID=$1`
 	rows, err := pool.Query(ctx, query, id)
 	if err != nil {
 		t.Fatal(err)

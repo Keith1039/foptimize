@@ -63,6 +63,7 @@ func (client DatabaseClient) UpdateUser(ctx context.Context, user schema.User) e
 	args := pgx.NamedArgs{
 		"ID":                   user.Id,
 		"EMAIL":                user.Email,
+		"ACTIVATED":            user.Activated,
 		"RELEVANT_AIRPORTS":    user.RelevantAirports,
 		"SUBSCRIBED_COUNTRIES": user.SubscribedCountries,
 		"CONFIG":               user.Config,

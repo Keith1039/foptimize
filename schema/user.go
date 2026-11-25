@@ -5,6 +5,7 @@ import "time"
 type User struct {
 	Id                  int         `json:"id" db:"id"`
 	Email               string      `json:"email" db:"email"`
+	Activated           bool        `json:"activated" db:"activated"`
 	RelevantAirports    []string    `json:"relevant_airports" db:"relevant_airports"`
 	SubscribedCountries []string    `json:"subscribed_countries" db:"subscribed_countries"`
 	Config              Config      `json:"config" db:"config"`
